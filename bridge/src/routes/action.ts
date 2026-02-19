@@ -15,13 +15,20 @@ export async function registerActionRoute(app: FastifyInstance) {
 
     const check = validatePayload(request.body);
     if (!check.ok) {
-      if (check.reason === "unsupported_action") return reply.code(400).send({ status: "failed", requestId, errorCode: "UNSUPPORTED_ACTION" });
-      if (check.reason === "stale_timestamp") return reply.code(400).send({ status: "failed", requestId, errorCode: "STALE_TIMESTAMP" });
-      if (check.reason === "payload_too_large") return reply.code(413).send({ status: "failed", requestId, errorCode: "PAYLOAD_TOO_LARGE" });
+      if (check.reason === "unsupported_action") {
+        return reply.code(400).send({ status: "failed", requestId, errorCode: "UNSUPPORTED_ACTION" });
+      }
+      if (check.reason === "stale_timestamp") {
+        return reply.code(400).send({ status: "failed", requestId, errorCode: "STALE_TIMESTAMP" });
+      }
+      if (check.reason === "payload_too_large") {
+        return reply.code(413).send({ status: "failed", requestId, errorCode: "PAYLOAD_TOO_LARGE" });
+      }
       return reply.code(400).send({ status: "failed", requestId, errorCode: "INVALID_PAYLOAD" });
     }
 
     const response = await forwardToOpenClaw(request.body, requestId);
-    return reply.code(200).send(response);
+    const statusCode = response.status === "sent" ? 200 : response.status === "queued" ? 202 : 502;
+    return reply.code(statusCode).send(response);
   });
 }
