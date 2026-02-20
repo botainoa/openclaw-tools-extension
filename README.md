@@ -16,8 +16,8 @@ Planned context-menu actions include:
 
 ## Project scope (initial)
 
-This repository currently contains only scaffolding and product direction.
-No extension code has been implemented yet.
+Bridge MVP implementation is in progress under `bridge/` (health endpoint, action endpoint, payload validation/auth, and OpenClaw forwarding adapter).
+Chrome extension and macOS clients are not implemented yet.
 
 ## Proposed architecture (high level)
 
@@ -62,4 +62,6 @@ Target capabilities:
 
 ## Status
 
-🚧 Scaffolding only — no production code yet.
+🚧 Bridge service (Phase 1/2) implemented; client surfaces pending.
+
+Deployment/runbook details for bridge (including VPS + Telegram relay mode) are in `bridge/README.md`.
