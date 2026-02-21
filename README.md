@@ -36,12 +36,24 @@ Deep-dive docs:
 
 ---
 
+## Critical deployment rule (important)
+
+Run the **bridge on the same machine where OpenClaw is running**.
+
+- If OpenClaw runs on a VPS, run bridge on that VPS.
+- If OpenClaw runs on your laptop, run bridge on your laptop.
+- The browser extension can run anywhere, but it should call the bridge host where OpenClaw is available.
+
+This avoids auth/profile mismatch issues and keeps Telegram delivery reliable.
+
+---
+
 ## Setup paths
 
 Choose one:
 
-1. **Local dev setup** (quick iteration)
-2. **VPS + Tailscale setup** (recommended for real use)
+1. **Local dev setup** (quick iteration, OpenClaw + bridge both local)
+2. **VPS + Tailscale setup** (recommended for real use, OpenClaw + bridge both on VPS)
 
 If you want Telegram replies from actions, you need OpenClaw + Telegram configured on the machine where the bridge runs.
 
@@ -74,7 +86,9 @@ cd openclaw-tools-extension
 
 ---
 
-## 3) Configure the bridge
+## 3) Configure the bridge (on your OpenClaw host)
+
+> Do this on the same machine where OpenClaw is running.
 
 ```bash
 cd bridge
@@ -163,6 +177,8 @@ If this fails, bridge can still save bookmarks but Telegram acks/replies will fa
 ---
 
 ## 6) Expose bridge to your browser machine
+
+If OpenClaw+bridge run on a VPS, use one of these options so your local browser can reach that VPS bridge.
 
 ### Option A: local-only
 Keep extension `Bridge URL` as:
