@@ -62,6 +62,12 @@ OPENCLAW_TELEGRAM_CHANNEL=telegram
 OPENCLAW_FORWARD_TIMEOUT_MS=6000
 OPENCLAW_FORWARD_MAX_RETRIES=1
 OPENCLAW_FORWARD_DEBUG=1
+
+# Optional bookmark store path.
+# Default if unset: ../BOOKMARKS.md (repo root)
+# Recommended on OpenClaw VPS: /home/<user>/.openclaw/workspace/BOOKMARKS.md
+# OPENCLAW_BOOKMARKS_PATH=/absolute/path/to/BOOKMARKS.md
+
 BRIDGE_PORT=8787
 ```
 
@@ -152,8 +158,29 @@ Optional Telegram relay via CLI:
 - Set `OPENCLAW_TELEGRAM_TARGET` to enable CLI send step.
 - Bridge runs: `openclaw message send --channel <channel> --target <target> --message <text>`
 - If binary path is not on `PATH`, set `OPENCLAW_CLI_PATH`.
+- Bookmark actions also send a Telegram confirmation message by default when `OPENCLAW_TELEGRAM_TARGET` is set.
 
 `/v1/chat/completions` must be enabled in your OpenClaw Gateway config.
+
+## Bookmark action storage
+
+For `action="bookmark"`, the bridge writes directly to `BOOKMARKS.md` on the VPS.
+
+- Default path: `../BOOKMARKS.md` (repo root relative to `bridge/`)
+- Recommended in production: set `OPENCLAW_BOOKMARKS_PATH` to your OpenClaw workspace, e.g. `/home/<user>/.openclaw/workspace/BOOKMARKS.md`
+- Optional override: `OPENCLAW_BOOKMARKS_PATH`
+- Includes: timestamp, title, URL, source, optional tags, optional note snippet
+- Uses `idempotencyKey` to avoid duplicate entries on client retries
+- Sends a short Telegram "bookmark saved" confirmation by default when `OPENCLAW_TELEGRAM_TARGET` is configured
+
+This makes it easy to ask the assistant later for "latest bookmarks" by reading the Markdown file.
+
+Migration tip:
+
+```bash
+# Move existing repo-local file to OpenClaw workspace path (example)
+mv ../BOOKMARKS.md /home/<user>/.openclaw/workspace/BOOKMARKS.md
+```
 
 ## Behavior
 

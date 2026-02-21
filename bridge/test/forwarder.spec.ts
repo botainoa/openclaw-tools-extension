@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { forwardToOpenClaw } from "../src/lib/forwarder.js";
 import type { ActionRequest } from "../src/types/action.js";
+import { mkdtemp, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
 function makeRequest(): ActionRequest {
   return {
@@ -26,6 +29,99 @@ describe("forwardToOpenClaw", () => {
     delete process.env.OPENCLAW_TELEGRAM_CHANNEL;
     delete process.env.OPENCLAW_TELEGRAM_SEND_TIMEOUT_MS;
     delete process.env.OPENCLAW_CLI_PATH;
+    delete process.env.OPENCLAW_BOOKMARKS_PATH;
+  });
+
+  it("stores bookmark actions in BOOKMARKS.md and sends Telegram ack by default", async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-bookmarks-"));
+    const bookmarksPath = path.join(tempDir, "BOOKMARKS.md");
+    process.env.OPENCLAW_BOOKMARKS_PATH = bookmarksPath;
+    process.env.OPENCLAW_TELEGRAM_TARGET = "telegram-target";
+    process.env.OPENCLAW_TELEGRAM_CHANNEL = "telegram";
+
+    const fetchMock = vi.fn();
+    const telegramSendFn = vi.fn().mockResolvedValue(undefined);
+    const res = await forwardToOpenClaw(
+      {
+        ...makeRequest(),
+        action: "bookmark",
+        title: "Deep work article",
+        tags: ["Productivity", "Deep Work"],
+        selection: "A short highlighted note.",
+        idempotencyKey: "bookmark-1"
+      },
+      "r-bookmark-1",
+      { fetchFn: fetchMock, telegramSendFn }
+    );
+
+    expect(res).toEqual({ status: "sent", requestId: "r-bookmark-1" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(telegramSendFn).toHaveBeenCalledTimes(1);
+    expect(telegramSendFn).toHaveBeenCalledWith({
+      channel: "telegram",
+      target: "telegram-target",
+      message: "🔖 Saved bookmark: Deep work article\nhttps://example.com",
+      timeoutMs: 8000
+    });
+
+    const content = await readFile(bookmarksPath, "utf8");
+    expect(content).toContain("# BOOKMARKS");
+    expect(content).toContain("[Deep work article](<https://example.com>)");
+    expect(content).toContain("source: chrome");
+    expect(content).toContain("#productivity #deep-work");
+    expect(content).toContain("idempotencyKey: bookmark-1");
+  });
+
+  it("deduplicates bookmark writes by idempotency key and avoids duplicate Telegram acks", async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-bookmarks-"));
+    const bookmarksPath = path.join(tempDir, "BOOKMARKS.md");
+    process.env.OPENCLAW_BOOKMARKS_PATH = bookmarksPath;
+    process.env.OPENCLAW_TELEGRAM_TARGET = "telegram-target";
+
+    const telegramSendFn = vi.fn().mockResolvedValue(undefined);
+
+    const bookmarkReq: ActionRequest = {
+      ...makeRequest(),
+      action: "bookmark",
+      title: "Same URL twice",
+      idempotencyKey: "bookmark-dedupe-1"
+    };
+
+    const first = await forwardToOpenClaw(bookmarkReq, "r-bookmark-2", { telegramSendFn });
+    const second = await forwardToOpenClaw(bookmarkReq, "r-bookmark-3", { telegramSendFn });
+
+    expect(first.status).toBe("sent");
+    expect(second.status).toBe("sent");
+
+    const content = await readFile(bookmarksPath, "utf8");
+    const dedupeMatches = content.match(/idempotencyKey: bookmark-dedupe-1/g) ?? [];
+    expect(dedupeMatches).toHaveLength(1);
+    expect(telegramSendFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps bookmark save successful even if Telegram ack fails", async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-bookmarks-"));
+    const bookmarksPath = path.join(tempDir, "BOOKMARKS.md");
+    process.env.OPENCLAW_BOOKMARKS_PATH = bookmarksPath;
+    process.env.OPENCLAW_TELEGRAM_TARGET = "telegram-target";
+
+    const telegramSendFn = vi.fn().mockRejectedValue(new Error("telegram down"));
+
+    const res = await forwardToOpenClaw(
+      {
+        ...makeRequest(),
+        action: "bookmark",
+        title: "Still saved",
+        idempotencyKey: "bookmark-ack-fail"
+      },
+      "r-bookmark-ack-fail",
+      { telegramSendFn }
+    );
+
+    expect(res).toEqual({ status: "sent", requestId: "r-bookmark-ack-fail" });
+
+    const content = await readFile(bookmarksPath, "utf8");
+    expect(content).toContain("idempotencyKey: bookmark-ack-fail");
   });
 
   it("fails when required upstream env is missing", async () => {
