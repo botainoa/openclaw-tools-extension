@@ -60,8 +60,25 @@ npm run build
 sudo systemctl restart openclaw-bridge
 ```
 
+## Optional: user-level systemd (no sudo)
+
+If you cannot use `sudo` yet, you can run the bridge as a user service:
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp <repo>/bridge/deploy/systemd/openclaw-bridge.service.example ~/.config/systemd/user/openclaw-bridge.service
+# edit service file for user mode:
+# - remove User=/Group= lines
+# - set WantedBy=default.target
+# - replace <absolute-path-to-repo>
+systemctl --user daemon-reload
+systemctl --user enable --now openclaw-bridge
+systemctl --user status openclaw-bridge
+```
+
 ## Notes
 
 - Keep bridge bound to localhost (`127.0.0.1`) and expose externally via Tailscale Serve or SSH tunnel.
 - Keep `bridge/.env` permissions restricted (for example: `chmod 600 .env`).
 - Do not put secrets in unit files or git-tracked files.
+- For Node.js services, keep `MemoryDenyWriteExecute=false` (V8 JIT requires executable memory mappings).

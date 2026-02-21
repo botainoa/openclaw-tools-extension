@@ -26,7 +26,8 @@ ProtectKernelModules=true
 ProtectControlGroups=true
 RestrictSUIDSGID=true
 LockPersonality=true
-MemoryDenyWriteExecute=true
+# Do not set true for Node.js: V8 JIT needs executable memory mappings.
+MemoryDenyWriteExecute=false
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 SystemCallArchitectures=native
 
