@@ -11,15 +11,29 @@ Fastify-based localhost bridge for OpenClaw Tools clients.
 
 - `X-OpenClaw-Client-Key`
 
-## Local run
+## Quick start (local or VPS)
 
 ```bash
 cd bridge
+cp .env.example .env
+# edit .env and set real values (do not commit this file)
 npm install
 set -a
 source .env
 set +a
 npm run dev
+```
+
+Production start (compiled):
+
+```bash
+cd bridge
+npm install
+npm run build
+set -a
+source .env
+set +a
+npm start
 ```
 
 ## Run On VPS (Telegram Relay Mode)
@@ -34,7 +48,7 @@ Use this when `openclaw` CLI is available on the VPS (not on your laptop).
 
 ```bash
 OPENCLAW_CLIENT_KEY=<bridge_client_key>
-OPENCLAW_BASE_URL=http://127.0.0.1:3400
+OPENCLAW_BASE_URL=http://127.0.0.1:18789
 OPENCLAW_TOKEN=<gateway_token>
 OPENCLAW_SESSION_KEY=agent:main:main
 OPENCLAW_MODEL=openclaw:main
@@ -66,13 +80,32 @@ npm start
 openclaw message send --channel telegram --target <chat_id_or_username> --message "bridge cli test"
 ```
 
-5. If Chrome extension runs on your local machine, tunnel localhost bridge port:
+5. Optional remote access from your local machine:
+
+- **SSH tunnel (simple and safe):**
 
 ```bash
 ssh -N -L 8787:127.0.0.1:8787 <user>@<vps-host>
 ```
 
 Then keep extension/`curl` target at `http://127.0.0.1:8787`.
+
+- **Tailscale Serve (tailnet-only):**
+
+```bash
+# one-time so your user can manage serve without sudo
+sudo tailscale set --operator=$USER
+
+# expose bridge on a dedicated HTTPS port (avoids conflicts)
+tailscale serve --bg --https=8443 --set-path / 127.0.0.1:8787
+tailscale serve status
+```
+
+Then call the bridge via your node tailnet URL, for example:
+
+```bash
+https://<your-node>.<your-tailnet>.ts.net:8443/v1/action
+```
 
 ## Upstream forwarding config
 
