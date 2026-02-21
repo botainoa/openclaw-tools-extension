@@ -80,7 +80,31 @@ npm start
 openclaw message send --channel telegram --target <chat_id_or_username> --message "bridge cli test"
 ```
 
-5. Optional remote access from your local machine:
+5. Run as a persistent system service (recommended):
+
+> You can also use PM2, but systemd is preferred on VPS for native boot/startup integration and clearer ops logs.
+
+- Example unit file (sanitized, no secrets):
+  - `bridge/deploy/systemd/openclaw-bridge.service.example`
+
+Install with placeholders replaced:
+
+```bash
+sudo cp bridge/deploy/systemd/openclaw-bridge.service.example /etc/systemd/system/openclaw-bridge.service
+# edit /etc/systemd/system/openclaw-bridge.service and replace placeholders
+sudo systemctl daemon-reload
+sudo systemctl enable --now openclaw-bridge
+sudo systemctl status openclaw-bridge
+```
+
+Useful operations:
+
+```bash
+sudo systemctl restart openclaw-bridge
+sudo journalctl -u openclaw-bridge -f
+```
+
+6. Optional remote access from your local machine:
 
 - **SSH tunnel (simple and safe):**
 

@@ -1,0 +1,39 @@
+[Unit]
+Description=OpenClaw Tools Bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<linux-user>
+Group=<linux-user>
+WorkingDirectory=<absolute-path-to-repo>/bridge
+EnvironmentFile=<absolute-path-to-repo>/bridge/.env
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=3
+TimeoutStartSec=30
+TimeoutStopSec=15
+KillSignal=SIGTERM
+
+# Security hardening (balanced profile)
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+
+# NOTE:
+# Keep home access enabled because Telegram relay mode calls `openclaw` CLI,
+# which may need access to ~/.openclaw credentials/config.
+ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target
