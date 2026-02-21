@@ -86,6 +86,8 @@ openclaw message send --channel telegram --target <chat_id_or_username> --messag
 
 - Example unit file (sanitized, no secrets):
   - `bridge/deploy/systemd/openclaw-bridge.service.example`
+- Step-by-step install guide:
+  - `bridge/deploy/systemd/INSTALL.md`
 
 Install with placeholders replaced:
 
