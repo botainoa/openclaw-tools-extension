@@ -1,4 +1,4 @@
-# OpenClaw Chrome Extension (Private MVP)
+# RightClaw Chrome Extension (Private MVP)
 
 Manifest V3 extension that sends context-menu actions to the OpenClaw bridge.
 

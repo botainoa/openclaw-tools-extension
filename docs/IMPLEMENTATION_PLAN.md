@@ -1,4 +1,4 @@
-# OpenClaw Tools Implementation Plan (Current)
+# RightClaw Implementation Plan (Current)
 
 Generated: 2026-02-21
 
