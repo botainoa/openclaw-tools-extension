@@ -54,6 +54,17 @@ function buildActionMessage(req: ActionRequest, requestId: string): string {
   ].join("\n");
 }
 
+function buildBookmarkAckMessage(req: ActionRequest): string {
+  const title = req.title?.trim() || "Untitled";
+  const url = req.url?.trim();
+
+  if (url) {
+    return `🔖 Saved bookmark: ${title}\n${url}`;
+  }
+
+  return `🔖 Saved bookmark: ${title}`;
+}
+
 function extractCompletionText(payload: unknown): string | null {
   if (typeof payload !== "object" || payload === null) return null;
   if (!("choices" in payload)) return null;
@@ -217,10 +228,31 @@ export async function forwardToOpenClaw(
   requestId: string,
   deps: { fetchFn?: FetchLike; telegramSendFn?: TelegramSendFn; bookmarkAppendFn?: BookmarkAppendFn } = {}
 ): Promise<BridgeResponse> {
+  const telegramTarget = process.env.OPENCLAW_TELEGRAM_TARGET;
+  const telegramChannel = process.env.OPENCLAW_TELEGRAM_CHANNEL ?? DEFAULT_TELEGRAM_CHANNEL;
+  const telegramSendTimeoutMs = Number(process.env.OPENCLAW_TELEGRAM_SEND_TIMEOUT_MS ?? DEFAULT_TELEGRAM_SEND_TIMEOUT_MS);
+
   if (req.action === "bookmark") {
     try {
       const appendFn = deps.bookmarkAppendFn ?? appendBookmark;
-      await appendFn(req, requestId);
+      const result = await appendFn(req, requestId);
+
+      if (telegramTarget && !result.deduped) {
+        const telegramSendFn = deps.telegramSendFn ?? sendTelegramViaCli;
+        try {
+          await telegramSendFn({
+            channel: telegramChannel,
+            target: telegramTarget,
+            message: buildBookmarkAckMessage(req),
+            timeoutMs: telegramSendTimeoutMs
+          });
+        } catch (error) {
+          debugForwarderLog("bookmark telegram ack failed", {
+            message: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+
       return { status: "sent", requestId };
     } catch (error) {
       debugForwarderLog("bookmark append failed", {
@@ -237,9 +269,6 @@ export async function forwardToOpenClaw(
   const agentId = process.env.OPENCLAW_AGENT_ID;
   const timeoutMs = Number(process.env.OPENCLAW_FORWARD_TIMEOUT_MS ?? DEFAULT_TIMEOUT_MS);
   const maxRetries = Number(process.env.OPENCLAW_FORWARD_MAX_RETRIES ?? DEFAULT_MAX_RETRIES);
-  const telegramTarget = process.env.OPENCLAW_TELEGRAM_TARGET;
-  const telegramChannel = process.env.OPENCLAW_TELEGRAM_CHANNEL ?? DEFAULT_TELEGRAM_CHANNEL;
-  const telegramSendTimeoutMs = Number(process.env.OPENCLAW_TELEGRAM_SEND_TIMEOUT_MS ?? DEFAULT_TELEGRAM_SEND_TIMEOUT_MS);
 
   if (!baseUrl || !token) {
     return { status: "failed", requestId, errorCode: "UPSTREAM_UNAVAILABLE" };

@@ -158,6 +158,7 @@ Optional Telegram relay via CLI:
 - Set `OPENCLAW_TELEGRAM_TARGET` to enable CLI send step.
 - Bridge runs: `openclaw message send --channel <channel> --target <target> --message <text>`
 - If binary path is not on `PATH`, set `OPENCLAW_CLI_PATH`.
+- Bookmark actions also send a Telegram confirmation message by default when `OPENCLAW_TELEGRAM_TARGET` is set.
 
 `/v1/chat/completions` must be enabled in your OpenClaw Gateway config.
 
@@ -170,6 +171,7 @@ For `action="bookmark"`, the bridge writes directly to `BOOKMARKS.md` on the VPS
 - Optional override: `OPENCLAW_BOOKMARKS_PATH`
 - Includes: timestamp, title, URL, source, optional tags, optional note snippet
 - Uses `idempotencyKey` to avoid duplicate entries on client retries
+- Sends a short Telegram "bookmark saved" confirmation by default when `OPENCLAW_TELEGRAM_TARGET` is configured
 
 This makes it easy to ask the assistant later for "latest bookmarks" by reading the Markdown file.
 

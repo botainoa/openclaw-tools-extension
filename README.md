@@ -29,7 +29,7 @@ Native macOS client is still pending.
 2. Client posts payload to a small local bridge service.
 3. Bridge forwards request to OpenClaw session (`agent:main:main`).
 4. Bridge routes actions:
-   - `bookmark`: append structured entry directly to `BOOKMARKS.md`
+   - `bookmark`: append structured entry directly to `BOOKMARKS.md` (and send Telegram save confirmation when relay target is configured)
    - other actions: forward to OpenClaw chat-completions pipeline
 5. For **Summarise** and **Explain**, OpenClaw sends an immediate response to the user's Telegram chat (same active assistant conversation).
 
