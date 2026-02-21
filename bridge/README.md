@@ -106,6 +106,10 @@ sudo systemctl restart openclaw-bridge
 sudo journalctl -u openclaw-bridge -f
 ```
 
+Hardening note:
+
+- For Node.js services, keep `MemoryDenyWriteExecute=false` in systemd units (V8 JIT requires executable memory mappings).
+
 6. Optional remote access from your local machine:
 
 - **SSH tunnel (simple and safe):**
