@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { forwardToOpenClaw } from "../src/lib/forwarder.js";
 import type { ActionRequest } from "../src/types/action.js";
+import { mkdtemp, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
 function makeRequest(): ActionRequest {
   return {
@@ -26,6 +29,60 @@ describe("forwardToOpenClaw", () => {
     delete process.env.OPENCLAW_TELEGRAM_CHANNEL;
     delete process.env.OPENCLAW_TELEGRAM_SEND_TIMEOUT_MS;
     delete process.env.OPENCLAW_CLI_PATH;
+    delete process.env.OPENCLAW_BOOKMARKS_PATH;
+  });
+
+  it("stores bookmark actions in BOOKMARKS.md without requiring upstream", async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-bookmarks-"));
+    const bookmarksPath = path.join(tempDir, "BOOKMARKS.md");
+    process.env.OPENCLAW_BOOKMARKS_PATH = bookmarksPath;
+
+    const fetchMock = vi.fn();
+    const res = await forwardToOpenClaw(
+      {
+        ...makeRequest(),
+        action: "bookmark",
+        title: "Deep work article",
+        tags: ["Productivity", "Deep Work"],
+        selection: "A short highlighted note.",
+        idempotencyKey: "bookmark-1"
+      },
+      "r-bookmark-1",
+      { fetchFn: fetchMock }
+    );
+
+    expect(res).toEqual({ status: "sent", requestId: "r-bookmark-1" });
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    const content = await readFile(bookmarksPath, "utf8");
+    expect(content).toContain("# BOOKMARKS");
+    expect(content).toContain("[Deep work article](<https://example.com>)");
+    expect(content).toContain("source: chrome");
+    expect(content).toContain("#productivity #deep-work");
+    expect(content).toContain("idempotencyKey: bookmark-1");
+  });
+
+  it("deduplicates bookmark writes by idempotency key", async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-bookmarks-"));
+    const bookmarksPath = path.join(tempDir, "BOOKMARKS.md");
+    process.env.OPENCLAW_BOOKMARKS_PATH = bookmarksPath;
+
+    const bookmarkReq: ActionRequest = {
+      ...makeRequest(),
+      action: "bookmark",
+      title: "Same URL twice",
+      idempotencyKey: "bookmark-dedupe-1"
+    };
+
+    const first = await forwardToOpenClaw(bookmarkReq, "r-bookmark-2");
+    const second = await forwardToOpenClaw(bookmarkReq, "r-bookmark-3");
+
+    expect(first.status).toBe("sent");
+    expect(second.status).toBe("sent");
+
+    const content = await readFile(bookmarksPath, "utf8");
+    const dedupeMatches = content.match(/idempotencyKey: bookmark-dedupe-1/g) ?? [];
+    expect(dedupeMatches).toHaveLength(1);
   });
 
   it("fails when required upstream env is missing", async () => {

@@ -41,7 +41,8 @@ Manifest V3 extension that sends context-menu actions to the OpenClaw bridge.
 2. Pick an OpenClaw action.
 3. For `Custom Prompt`, enter prompt text in the in-page modal and send.
 4. On restricted pages (for example `chrome://` pages), a popup fallback is used.
-5. Wait for Telegram response from OpenClaw.
+5. `Bookmark in OpenClaw` writes a Markdown entry to server-side `BOOKMARKS.md`.
+6. Wait for Telegram response from OpenClaw for summarize/explain/prompt actions.
 
 ## Notes
 

@@ -1,6 +1,7 @@
 import type { ActionRequest, BridgeResponse } from "../types/action.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { appendBookmark } from "./bookmarks.js";
 
 const DEFAULT_TIMEOUT_MS = 6000;
 const DEFAULT_MAX_RETRIES = 1;
@@ -12,6 +13,7 @@ const DEFAULT_TELEGRAM_SEND_TIMEOUT_MS = 8000;
 
 type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 type TelegramSendFn = (params: { channel: string; target: string; message: string; timeoutMs: number }) => Promise<void>;
+type BookmarkAppendFn = (req: ActionRequest, requestId: string) => Promise<{ deduped: boolean }>;
 
 const execFileAsync = promisify(execFile);
 
@@ -213,8 +215,21 @@ async function forwardViaChatCompletionsOnce(
 export async function forwardToOpenClaw(
   req: ActionRequest,
   requestId: string,
-  deps: { fetchFn?: FetchLike; telegramSendFn?: TelegramSendFn } = {}
+  deps: { fetchFn?: FetchLike; telegramSendFn?: TelegramSendFn; bookmarkAppendFn?: BookmarkAppendFn } = {}
 ): Promise<BridgeResponse> {
+  if (req.action === "bookmark") {
+    try {
+      const appendFn = deps.bookmarkAppendFn ?? appendBookmark;
+      await appendFn(req, requestId);
+      return { status: "sent", requestId };
+    } catch (error) {
+      debugForwarderLog("bookmark append failed", {
+        message: error instanceof Error ? error.message : String(error)
+      });
+      return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
+    }
+  }
+
   const baseUrl = process.env.OPENCLAW_BASE_URL;
   const token = process.env.OPENCLAW_TOKEN;
   const sessionKey = process.env.OPENCLAW_SESSION_KEY ?? DEFAULT_SESSION_KEY;

@@ -62,6 +62,10 @@ OPENCLAW_TELEGRAM_CHANNEL=telegram
 OPENCLAW_FORWARD_TIMEOUT_MS=6000
 OPENCLAW_FORWARD_MAX_RETRIES=1
 OPENCLAW_FORWARD_DEBUG=1
+
+# Optional bookmark store path (default: ../BOOKMARKS.md in repo root)
+# OPENCLAW_BOOKMARKS_PATH=/absolute/path/to/BOOKMARKS.md
+
 BRIDGE_PORT=8787
 ```
 
@@ -154,6 +158,17 @@ Optional Telegram relay via CLI:
 - If binary path is not on `PATH`, set `OPENCLAW_CLI_PATH`.
 
 `/v1/chat/completions` must be enabled in your OpenClaw Gateway config.
+
+## Bookmark action storage
+
+For `action="bookmark"`, the bridge writes directly to `BOOKMARKS.md` on the VPS.
+
+- Default path: `../BOOKMARKS.md` (repo root relative to `bridge/`)
+- Optional override: `OPENCLAW_BOOKMARKS_PATH`
+- Includes: timestamp, title, URL, source, optional tags, optional note snippet
+- Uses `idempotencyKey` to avoid duplicate entries on client retries
+
+This makes it easy to ask the assistant later for "latest bookmarks" by reading the Markdown file.
 
 ## Behavior
 

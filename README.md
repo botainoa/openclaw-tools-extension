@@ -28,14 +28,16 @@ Native macOS client is still pending.
    - Surface B (planned): native macOS Swift app
 2. Client posts payload to a small local bridge service.
 3. Bridge forwards request to OpenClaw session (`agent:main:main`).
-4. OpenClaw handles action and persists bookmarks in markdown.
+4. Bridge routes actions:
+   - `bookmark`: append structured entry directly to `BOOKMARKS.md`
+   - other actions: forward to OpenClaw chat-completions pipeline
 5. For **Summarise** and **Explain**, OpenClaw sends an immediate response to the user's Telegram chat (same active assistant conversation).
 
 ## Data approach
 
-Bookmarks are intended to be stored in a human-readable markdown file:
+Bookmarks are stored in a human-readable markdown file:
 
-- `BOOKMARKS.md` (append-only entries grouped by date)
+- `BOOKMARKS.md` (append-only entries with timestamp, URL/title, source, optional tags, optional note)
 
 ## MVP requirement
 
@@ -56,7 +58,7 @@ Target capabilities:
 
 1. Validate Chrome extension E2E against VPS bridge in daily usage.
 2. Add extension-side telemetry and quality-of-life improvements.
-3. Implement bookmark write/read conventions in `BOOKMARKS.md` on the OpenClaw side.
+3. Add retrieval helpers for "latest bookmarks" and filtering by tag/date.
 4. Draft Swift macOS app architecture (menu bar app, text capture flow, prompt UI).
 5. Build macOS Swift MVP with Summarise/Explain/Custom Prompt actions.
 
