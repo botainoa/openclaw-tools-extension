@@ -239,18 +239,16 @@ export async function forwardToOpenClaw(
 
       if (telegramTarget && !result.deduped) {
         const telegramSendFn = deps.telegramSendFn ?? sendTelegramViaCli;
-        try {
-          await telegramSendFn({
-            channel: telegramChannel,
-            target: telegramTarget,
-            message: buildBookmarkAckMessage(req),
-            timeoutMs: telegramSendTimeoutMs
-          });
-        } catch (error) {
+        void telegramSendFn({
+          channel: telegramChannel,
+          target: telegramTarget,
+          message: buildBookmarkAckMessage(req),
+          timeoutMs: telegramSendTimeoutMs
+        }).catch((error) => {
           debugForwarderLog("bookmark telegram ack failed", {
             message: error instanceof Error ? error.message : String(error)
           });
-        }
+        });
       }
 
       return { status: "sent", requestId };

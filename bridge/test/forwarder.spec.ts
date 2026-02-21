@@ -72,6 +72,37 @@ describe("forwardToOpenClaw", () => {
     expect(content).toContain("idempotencyKey: bookmark-1");
   });
 
+  it("returns quickly for bookmark even when Telegram ack is slow", async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-bookmarks-"));
+    const bookmarksPath = path.join(tempDir, "BOOKMARKS.md");
+    process.env.OPENCLAW_BOOKMARKS_PATH = bookmarksPath;
+    process.env.OPENCLAW_TELEGRAM_TARGET = "telegram-target";
+
+    const telegramSendFn = vi.fn(
+      () =>
+        new Promise<void>(() => {
+          // Intentionally never resolves; bookmark save path must not block on this.
+        })
+    );
+
+    const startedAt = Date.now();
+    const res = await forwardToOpenClaw(
+      {
+        ...makeRequest(),
+        action: "bookmark",
+        title: "Non-blocking ack",
+        idempotencyKey: "bookmark-non-blocking-1"
+      },
+      "r-bookmark-non-blocking",
+      { telegramSendFn }
+    );
+    const elapsedMs = Date.now() - startedAt;
+
+    expect(res).toEqual({ status: "sent", requestId: "r-bookmark-non-blocking" });
+    expect(telegramSendFn).toHaveBeenCalledTimes(1);
+    expect(elapsedMs).toBeLessThan(500);
+  });
+
   it("deduplicates bookmark writes by idempotency key and avoids duplicate Telegram acks", async () => {
     const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-bookmarks-"));
     const bookmarksPath = path.join(tempDir, "BOOKMARKS.md");

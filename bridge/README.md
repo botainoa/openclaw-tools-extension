@@ -172,6 +172,7 @@ For `action="bookmark"`, the bridge writes directly to `BOOKMARKS.md` on the VPS
 - Includes: timestamp, title, URL, source, optional tags, optional note snippet
 - Uses `idempotencyKey` to avoid duplicate entries on client retries
 - Sends a short Telegram "bookmark saved" confirmation by default when `OPENCLAW_TELEGRAM_TARGET` is configured
+- Telegram confirmation is sent asynchronously so bookmark requests return quickly even if Telegram relay is slow
 
 This makes it easy to ask the assistant later for "latest bookmarks" by reading the Markdown file.
 
