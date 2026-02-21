@@ -2,6 +2,14 @@
 
 Fastify-based localhost bridge for OpenClaw Tools clients.
 
+## Critical deployment rule
+
+Run bridge on the same host as OpenClaw.
+
+- If OpenClaw runs on a VPS, bridge must run on that VPS.
+- If OpenClaw runs locally, bridge should run locally.
+- Remote clients (browser/laptop) connect to that bridge over SSH tunnel or Tailscale.
+
 ## Endpoints
 
 - `GET /health`
@@ -56,8 +64,8 @@ OPENCLAW_MODEL=openclaw:main
 # Enable CLI relay to Telegram
 OPENCLAW_TELEGRAM_TARGET=<chat_id_or_username>
 OPENCLAW_TELEGRAM_CHANNEL=telegram
-# Optional if binary is not on PATH
-# OPENCLAW_CLI_PATH=/usr/local/bin/openclaw
+# Strongly recommended for systemd environments
+OPENCLAW_CLI_PATH=/absolute/path/to/openclaw
 
 OPENCLAW_FORWARD_TIMEOUT_MS=6000
 OPENCLAW_FORWARD_MAX_RETRIES=1
