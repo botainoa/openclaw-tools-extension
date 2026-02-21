@@ -1,0 +1,93 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 18px;
+  background: #f4f7f9;
+  color: #0f172a;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  border-radius: 12px;
+  border: 1px solid #d7dee8;
+  background: #fff;
+  padding: 18px;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 22px;
+}
+
+.subtitle {
+  margin: 0 0 12px;
+  color: #475569;
+}
+
+.context {
+  margin: 12px 0 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.context p {
+  margin: 4px 0;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+label {
+  display: block;
+  margin: 8px 0;
+  font-weight: 600;
+}
+
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 10px;
+  resize: vertical;
+  font: inherit;
+}
+
+.actions {
+  margin-top: 10px;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  background: #0f766e;
+  color: #fff;
+  padding: 10px 14px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.status {
+  min-height: 22px;
+  margin-top: 10px;
+}
+
+.status.error {
+  color: #991b1b;
+}
+
+.status.ok {
+  color: #166534;
+}

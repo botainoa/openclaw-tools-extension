@@ -16,8 +16,10 @@ Planned context-menu actions include:
 
 ## Project scope (initial)
 
-Bridge MVP implementation is in progress under `bridge/` (health endpoint, action endpoint, payload validation/auth, and OpenClaw forwarding adapter).
-Chrome extension and macOS clients are not implemented yet.
+Bridge MVP implementation under `bridge/` is complete (health endpoint, action endpoint, payload validation/auth, and OpenClaw forwarding adapter).
+
+A private Chrome extension MVP is now implemented under `extension/` (context menus, options, prompt popup, bridge health check).
+Native macOS client is still pending.
 
 ## Proposed architecture (high level)
 
@@ -52,16 +54,14 @@ Target capabilities:
 
 ## Next milestones
 
-1. Define Chrome extension manifest + permissions.
-2. Implement browser context menu actions and payload schema.
-3. Build local bridge endpoint with auth.
-4. Add OpenClaw-side action handlers + Telegram response routing for Summarise/Explain.
-5. Implement bookmark write/read conventions in `BOOKMARKS.md`.
-6. Draft Swift macOS app architecture (menu bar app, text capture flow, prompt UI).
-7. Build macOS Swift MVP with Summarise/Explain/Custom Prompt actions.
+1. Validate Chrome extension E2E against VPS bridge in daily usage.
+2. Add extension-side telemetry and quality-of-life improvements.
+3. Implement bookmark write/read conventions in `BOOKMARKS.md` on the OpenClaw side.
+4. Draft Swift macOS app architecture (menu bar app, text capture flow, prompt UI).
+5. Build macOS Swift MVP with Summarise/Explain/Custom Prompt actions.
 
 ## Status
 
-🚧 Bridge service (Phase 1/2) implemented; client surfaces pending.
+🚧 Bridge service (Phase 1/2) implemented and Chrome extension MVP shipped; macOS client pending.
 
 Deployment/runbook details for bridge (including VPS + Telegram relay mode) are in `bridge/README.md`.
