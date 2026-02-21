@@ -36,7 +36,7 @@ function debugForwarderLog(message: string, details?: Record<string, unknown>): 
 
 function buildActionMessage(req: ActionRequest, requestId: string): string {
   return [
-    "OpenClaw Tools action request:",
+    "RightClaw action request:",
     JSON.stringify({
       requestId,
       action: req.action,

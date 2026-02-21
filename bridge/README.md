@@ -1,6 +1,6 @@
 # Bridge (Phase 1 + 2)
 
-Fastify-based localhost bridge for OpenClaw Tools clients.
+Fastify-based localhost bridge for RightClaw clients.
 
 ## Critical deployment rule
 

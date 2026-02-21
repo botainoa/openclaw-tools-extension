@@ -1,6 +1,6 @@
-# OpenClaw Tools
+# RightClaw
 
-OpenClaw Tools lets users send browser context to OpenClaw with one right-click action.
+RightClaw lets users send browser context to OpenClaw with one right-click action.
 
 Current implementation:
 - ✅ **Chrome extension** (`extension/`)
@@ -80,8 +80,8 @@ If you want Telegram replies from actions, you need OpenClaw + Telegram configur
 ## 2) Clone the repository
 
 ```bash
-git clone https://github.com/botainoa/openclaw-tools-extension.git
-cd openclaw-tools-extension
+git clone https://github.com/botainoa/rightclaw.git
+cd rightclaw
 ```
 
 ---
@@ -159,7 +159,7 @@ curl -sS http://127.0.0.1:8787/health
 Expected:
 
 ```json
-{"ok":true,"service":"openclaw-tools-bridge"}
+{"ok":true,"service":"rightclaw-bridge"}
 ```
 
 ---
@@ -225,7 +225,7 @@ https://<node>.<tailnet>.ts.net:8443
 1. Open `chrome://extensions`
 2. Enable **Developer mode**
 3. Click **Load unpacked**
-4. Select `openclaw-tools-extension/extension`
+4. Select `rightclaw/extension`
 5. Open extension options and set:
    - **Bridge URL**
    - **Client Key** (must match `OPENCLAW_CLIENT_KEY`)
@@ -278,7 +278,7 @@ sudo systemctl status openclaw-bridge
 ## 10) Upgrade/deploy changes safely
 
 ```bash
-cd /path/to/openclaw-tools-extension
+cd /path/to/rightclaw
 git pull
 cd bridge
 npm install

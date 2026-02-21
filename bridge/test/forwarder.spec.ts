@@ -230,7 +230,7 @@ describe("forwardToOpenClaw", () => {
     expect(body.stream).toBe(false);
     expect(Array.isArray(body.messages)).toBe(true);
     expect(body.messages[0]?.role).toBe("user");
-    expect(String(body.messages[0]?.content)).toContain("OpenClaw Tools action request:");
+    expect(String(body.messages[0]?.content)).toContain("RightClaw action request:");
     expect(String(body.messages[0]?.content)).toContain('"requestId":"r2"');
   });
 
