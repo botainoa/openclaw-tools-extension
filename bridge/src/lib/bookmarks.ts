@@ -7,6 +7,11 @@ const MAX_TITLE_CHARS = 180;
 const MAX_SELECTION_CHARS = 280;
 const MAX_TAGS = 8;
 const MAX_TAG_CHARS = 24;
+const TRACKING_PARAM_NAMES = new Set(["fbclid", "gclid", "mc_cid", "mc_eid", "igshid"]);
+
+export type BookmarkAppendResult =
+  | { deduped: false }
+  | { deduped: true; reason: "idempotency" | "url" };
 
 function singleLine(input: string | undefined, maxChars: number): string | undefined {
   if (!input) return undefined;
@@ -34,6 +39,72 @@ function sanitizeTag(tag: string): string | null {
     .slice(0, MAX_TAG_CHARS);
 
   return cleaned.length > 0 ? cleaned : null;
+}
+
+function canonicalizeUrl(raw: string): string | null {
+  const candidate = raw.trim();
+  if (!candidate) return null;
+
+  try {
+    const url = new URL(candidate);
+    url.hash = "";
+    url.hostname = url.hostname.toLowerCase();
+
+    if ((url.protocol === "https:" && url.port === "443") || (url.protocol === "http:" && url.port === "80")) {
+      url.port = "";
+    }
+
+    if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
+      url.pathname = url.pathname.replace(/\/+$/, "");
+    }
+
+    const keptParams = [...url.searchParams.entries()]
+      .filter(([key]) => {
+        const normalized = key.toLowerCase();
+        return !normalized.startsWith("utm_") && !TRACKING_PARAM_NAMES.has(normalized);
+      })
+      .sort(([aKey, aValue], [bKey, bValue]) => {
+        if (aKey === bKey) return aValue.localeCompare(bValue);
+        return aKey.localeCompare(bKey);
+      });
+
+    url.search = "";
+    for (const [key, value] of keptParams) {
+      url.searchParams.append(key, value);
+    }
+
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function extractUrlsFromBookmarks(content: string): string[] {
+  const urls: string[] = [];
+  const pattern = /\]\(<([^>\n]+)>\)|\]\((https?:\/\/[^\s)]+)\)/g;
+
+  for (const match of content.matchAll(pattern)) {
+    const url = match[1] ?? match[2];
+    if (url) {
+      urls.push(url);
+    }
+  }
+
+  return urls;
+}
+
+function hasDuplicateUrl(content: string, incomingUrl: string): boolean {
+  const canonicalIncoming = canonicalizeUrl(incomingUrl);
+  if (!canonicalIncoming) return false;
+
+  for (const existingUrl of extractUrlsFromBookmarks(content)) {
+    const canonicalExisting = canonicalizeUrl(existingUrl);
+    if (canonicalExisting && canonicalExisting === canonicalIncoming) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function buildBookmarkLine(req: ActionRequest, now: Date): string {
@@ -80,7 +151,7 @@ function bookmarkEntry(req: ActionRequest, requestId: string, now: Date): string
   return [buildBookmarkLine(req, now), ...buildMetadataLines(req, requestId)].join("\n");
 }
 
-export async function appendBookmark(req: ActionRequest, requestId: string, now = new Date()): Promise<{ deduped: boolean }> {
+export async function appendBookmark(req: ActionRequest, requestId: string, now = new Date()): Promise<BookmarkAppendResult> {
   const filePath = process.env.OPENCLAW_BOOKMARKS_PATH || DEFAULT_BOOKMARKS_PATH;
   await mkdir(path.dirname(filePath), { recursive: true });
 
@@ -96,7 +167,11 @@ export async function appendBookmark(req: ActionRequest, requestId: string, now 
   }
 
   if (req.idempotencyKey && existing.includes(`idempotencyKey: ${req.idempotencyKey}`)) {
-    return { deduped: true };
+    return { deduped: true, reason: "idempotency" };
+  }
+
+  if (req.url && hasDuplicateUrl(existing, req.url)) {
+    return { deduped: true, reason: "url" };
   }
 
   const needsHeader = existing.trim().length === 0;
