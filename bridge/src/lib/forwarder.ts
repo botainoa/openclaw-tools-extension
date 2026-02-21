@@ -1,7 +1,7 @@
 import type { ActionRequest, BridgeResponse } from "../types/action.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { appendBookmark } from "./bookmarks.js";
+import { appendBookmark, type BookmarkAppendResult } from "./bookmarks.js";
 
 const DEFAULT_TIMEOUT_MS = 6000;
 const DEFAULT_MAX_RETRIES = 1;
@@ -13,7 +13,7 @@ const DEFAULT_TELEGRAM_SEND_TIMEOUT_MS = 8000;
 
 type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 type TelegramSendFn = (params: { channel: string; target: string; message: string; timeoutMs: number }) => Promise<void>;
-type BookmarkAppendFn = (req: ActionRequest, requestId: string) => Promise<{ deduped: boolean }>;
+type BookmarkAppendFn = (req: ActionRequest, requestId: string) => Promise<BookmarkAppendResult>;
 
 const execFileAsync = promisify(execFile);
 
@@ -54,15 +54,16 @@ function buildActionMessage(req: ActionRequest, requestId: string): string {
   ].join("\n");
 }
 
-function buildBookmarkAckMessage(req: ActionRequest): string {
+function buildBookmarkAckMessage(req: ActionRequest, result: BookmarkAppendResult): string {
   const title = req.title?.trim() || "Untitled";
   const url = req.url?.trim();
+  const prefix = result.deduped && result.reason === "url" ? "🔖 Already bookmarked" : "🔖 Saved bookmark";
 
   if (url) {
-    return `🔖 Saved bookmark: ${title}\n${url}`;
+    return `${prefix}: ${title}\n${url}`;
   }
 
-  return `🔖 Saved bookmark: ${title}`;
+  return `${prefix}: ${title}`;
 }
 
 function extractCompletionText(payload: unknown): string | null {
@@ -237,12 +238,14 @@ export async function forwardToOpenClaw(
       const appendFn = deps.bookmarkAppendFn ?? appendBookmark;
       const result = await appendFn(req, requestId);
 
-      if (telegramTarget && !result.deduped) {
+      const shouldSendAck = !result.deduped || result.reason === "url";
+
+      if (telegramTarget && shouldSendAck) {
         const telegramSendFn = deps.telegramSendFn ?? sendTelegramViaCli;
         void telegramSendFn({
           channel: telegramChannel,
           target: telegramTarget,
-          message: buildBookmarkAckMessage(req),
+          message: buildBookmarkAckMessage(req, result),
           timeoutMs: telegramSendTimeoutMs
         }).catch((error) => {
           debugForwarderLog("bookmark telegram ack failed", {

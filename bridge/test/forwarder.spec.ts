@@ -130,6 +130,46 @@ describe("forwardToOpenClaw", () => {
     expect(telegramSendFn).toHaveBeenCalledTimes(1);
   });
 
+  it("deduplicates same canonical URL and sends already-bookmarked ack", async () => {
+    const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-bookmarks-"));
+    const bookmarksPath = path.join(tempDir, "BOOKMARKS.md");
+    process.env.OPENCLAW_BOOKMARKS_PATH = bookmarksPath;
+    process.env.OPENCLAW_TELEGRAM_TARGET = "telegram-target";
+
+    const telegramSendFn = vi.fn().mockResolvedValue(undefined);
+
+    await forwardToOpenClaw(
+      {
+        ...makeRequest(),
+        action: "bookmark",
+        url: "https://example.com/path/?utm_source=newsletter#section",
+        title: "Canonical URL test",
+        idempotencyKey: "bookmark-url-a"
+      },
+      "r-bookmark-url-a",
+      { telegramSendFn }
+    );
+
+    await forwardToOpenClaw(
+      {
+        ...makeRequest(),
+        action: "bookmark",
+        url: "https://example.com/path",
+        title: "Canonical URL test",
+        idempotencyKey: "bookmark-url-b"
+      },
+      "r-bookmark-url-b",
+      { telegramSendFn }
+    );
+
+    const content = await readFile(bookmarksPath, "utf8");
+    expect(content).toContain("idempotencyKey: bookmark-url-a");
+    expect(content).not.toContain("idempotencyKey: bookmark-url-b");
+
+    expect(telegramSendFn).toHaveBeenCalledTimes(2);
+    expect(telegramSendFn.mock.calls[1]?.[0]?.message).toContain("🔖 Already bookmarked:");
+  });
+
   it("keeps bookmark save successful even if Telegram ack fails", async () => {
     const tempDir = await mkdtemp(path.join(tmpdir(), "openclaw-bookmarks-"));
     const bookmarksPath = path.join(tempDir, "BOOKMARKS.md");

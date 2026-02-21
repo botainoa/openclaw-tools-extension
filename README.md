@@ -38,6 +38,7 @@ Native macOS client is still pending.
 Bookmarks are stored in a human-readable markdown file:
 
 - `BOOKMARKS.md` (append-only entries with timestamp, URL/title, source, optional tags, optional note)
+- URL-level dedupe is applied using canonicalized URLs (tracking params and fragments stripped)
 - Recommended deployment path: OpenClaw workspace (`~/.openclaw/workspace/BOOKMARKS.md`) via `OPENCLAW_BOOKMARKS_PATH`
 
 ## MVP requirement
