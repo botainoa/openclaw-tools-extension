@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
 import { isAuthorized } from "../lib/auth.js";
-import { validatePayload } from "../lib/validation.js";
 import { forwardToOpenClaw } from "../lib/forwarder.js";
+import { validatePayload } from "../lib/validation.js";
 import type { ActionRequest, BridgeResponse } from "../types/action.js";
 
 type ForwardActionFn = (req: ActionRequest, requestId: string) => Promise<BridgeResponse>;

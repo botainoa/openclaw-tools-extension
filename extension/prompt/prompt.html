@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenClaw Prompt</title>
+    <link rel="stylesheet" href="./prompt.css" />
+  </head>
+  <body>
+    <main class="page">
+      <h1>Custom Prompt</h1>
+      <p class="subtitle">Send page/link/selection context with your own instruction.</p>
+
+      <section class="context" id="contextBlock">
+        <p><strong>URL:</strong> <span id="contextUrl">-</span></p>
+        <p><strong>Title:</strong> <span id="contextTitle">-</span></p>
+        <p><strong>Selection:</strong></p>
+        <pre id="contextSelection">(none)</pre>
+      </section>
+
+      <label for="promptText">Prompt</label>
+      <textarea id="promptText" rows="8" placeholder="What should OpenClaw do?"></textarea>
+
+      <div class="actions">
+        <button id="sendBtn" type="button">Send Prompt</button>
+      </div>
+
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </main>
+
+    <script type="module" src="./prompt.js"></script>
+  </body>
+</html>

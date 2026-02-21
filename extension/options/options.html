@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenClaw Tools Options</title>
+    <link rel="stylesheet" href="./options.css" />
+  </head>
+  <body>
+    <main class="page">
+      <h1>OpenClaw Tools</h1>
+      <p class="subtitle">Private bridge configuration for Chrome actions.</p>
+
+      <label for="bridgeUrl">Bridge URL</label>
+      <input id="bridgeUrl" type="url" spellcheck="false" placeholder="http://127.0.0.1:8787" />
+
+      <label for="clientKey">Client Key</label>
+      <input id="clientKey" type="password" spellcheck="false" placeholder="X-OpenClaw-Client-Key" />
+
+      <label for="responseMode">Response Mode</label>
+      <select id="responseMode">
+        <option value="telegram">telegram</option>
+        <option value="silent">silent</option>
+        <option value="both">both</option>
+      </select>
+
+      <label for="requestTimeoutMs">Request Timeout (ms)</label>
+      <input id="requestTimeoutMs" type="number" min="1000" step="500" />
+
+      <div class="actions">
+        <button id="saveBtn" type="button">Save Settings</button>
+        <button id="healthBtn" type="button">Test Bridge Health</button>
+      </div>
+
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+
+      <section class="result-panel">
+        <div class="result-panel-header">
+          <h2>Last Bridge Result</h2>
+          <button id="clearResultBtn" type="button">Clear</button>
+        </div>
+        <dl class="result-grid">
+          <dt>Status</dt>
+          <dd id="lastResultStatus">-</dd>
+          <dt>Action</dt>
+          <dd id="lastResultAction">-</dd>
+          <dt>Updated</dt>
+          <dd id="lastResultUpdated">-</dd>
+          <dt>Request ID</dt>
+          <dd id="lastResultRequestId">-</dd>
+          <dt>Error</dt>
+          <dd id="lastResultError">-</dd>
+          <dt>Message</dt>
+          <dd id="lastResultMessage">-</dd>
+        </dl>
+      </section>
+    </main>
+
+    <script type="module" src="./options.js"></script>
+  </body>
+</html>
