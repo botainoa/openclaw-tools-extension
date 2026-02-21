@@ -8,6 +8,7 @@ Use this guide to run the bridge as a persistent service on a Linux VPS.
 - Node.js and npm installed
 - Bridge repository cloned
 - `bridge/.env` created with real values (never commit `.env`)
+- OpenClaw running on the same host as this bridge service
 
 ## 2) Build bridge once
 
@@ -82,3 +83,4 @@ systemctl --user status openclaw-bridge
 - Keep `bridge/.env` permissions restricted (for example: `chmod 600 .env`).
 - Do not put secrets in unit files or git-tracked files.
 - For Node.js services, keep `MemoryDenyWriteExecute=false` (V8 JIT requires executable memory mappings).
+- In `bridge/.env`, set `OPENCLAW_CLI_PATH` explicitly when using Telegram relay under systemd.

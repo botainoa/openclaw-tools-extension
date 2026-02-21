@@ -35,6 +35,8 @@ Manifest V3 extension that sends context-menu actions to the OpenClaw bridge.
 3. Click `Save Settings`.
 4. Click `Test Bridge Health` and confirm healthy response.
 
+> Deployment rule: the bridge URL should point to the machine where OpenClaw is running (usually your VPS).
+
 ## Usage
 
 1. Right-click on a page, selected text, or link.

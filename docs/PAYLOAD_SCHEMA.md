@@ -1,6 +1,8 @@
 # Payload Schema (v1)
 
-Shared request contract for Chrome + macOS clients.
+Shared request contract for Chrome and future macOS clients.
+
+## Request body
 
 ```json
 {
@@ -18,23 +20,52 @@ Shared request contract for Chrome + macOS clients.
 }
 ```
 
+## Required headers
+
+- `Content-Type: application/json`
+- `X-OpenClaw-Client-Key: <shared-secret>`
+
 ## Field notes
 
+- `version` (required): currently `"1"`.
 - `action` (required): requested operation.
-- `source` (required): origin surface.
+- `source` (required): origin surface (`chrome|macos`).
 - `url` (optional but recommended): page/document link.
 - `title` (optional): display title.
 - `selection` (optional): highlighted text.
-- `userPrompt` (optional): only required for `prompt` action.
-- `tags` (optional): used mainly for bookmarks.
-- `responseMode` (optional): default `telegram`.
-- `idempotencyKey` (optional): dedupe support for retries.
-- `timestamp` (required): request freshness and replay protection.
+- `userPrompt` (optional): required when `action="prompt"`.
+- `tags` (optional): mostly used by bookmark action.
+- `responseMode` (optional): forwarded for non-bookmark actions; default is client-controlled (extension defaults to `telegram`).
+- `idempotencyKey` (optional): retry dedupe key.
+- `timestamp` (required): replay protection.
 
-## Validation rules
+## Validation rules (current)
 
 1. Reject unknown `action` values.
-2. Require at least one of: `url`, `selection`, or `userPrompt`.
-3. For `prompt`, require `userPrompt`.
-4. Enforce selection length cap (implementation-defined, e.g. 20k chars).
-5. Reject stale timestamps beyond allowed skew.
+2. Reject unknown top-level fields (strict body schema).
+3. Require at least one of: `url`, `selection`, or `userPrompt`.
+4. For `prompt`, require non-empty `userPrompt`.
+5. Enforce selection max length (currently 20k chars).
+6. Reject stale timestamps beyond allowed skew window.
+
+## Response body
+
+```json
+{
+  "status": "sent|queued|failed",
+  "requestId": "uuid",
+  "errorCode": "optional",
+  "retryAfterMs": 5000
+}
+```
+
+### Status semantics
+
+- `sent`: request accepted and processed for this stage.
+- `queued`: transient upstream timeout path.
+- `failed`: validation/auth/internal/upstream failure.
+
+## Known behavior notes
+
+- `bookmark` is handled directly by bridge storage path (`BOOKMARKS.md`) and does not require OpenClaw chat completion.
+- URL duplicates are deduped using canonical URL matching.

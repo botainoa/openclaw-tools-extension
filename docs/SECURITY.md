@@ -1,37 +1,59 @@
 # Security
 
-## Principles
+## Trust model
 
-- User-triggered actions only (no passive scraping)
-- Least privilege
-- Local-first trust boundary
-- Explicit auth between clients and bridge
+- Bridge is a **private control plane** for trusted clients you operate.
+- OpenClaw credentials stay server-side; clients only hold bridge client key.
+- Bridge should run on the same host as OpenClaw.
 
-## Bridge hardening requirements
+## Current enforced controls
 
-1. Bind bridge to `127.0.0.1` by default.
-2. Require client auth header (e.g., `X-OpenClaw-Client-Key`).
-3. Require request timestamp and reject stale requests.
-4. Enforce action allowlist (`bookmark`, `summarize`, `explain`, `prompt`).
-5. Enforce payload size limits (especially selected text).
-6. Validate payload against schema before forwarding.
-7. Never expose OpenClaw/Gateway tokens to extension code.
-8. Log minimal metadata only (no sensitive full-text by default).
+1. **Bridge bind scope**
+   - Runs on localhost (`127.0.0.1`) and should be exposed only via trusted transport (SSH tunnel or Tailscale).
 
-## Secret handling
+2. **Client authentication**
+   - Requires `X-OpenClaw-Client-Key`.
+   - Rejects unauthorized requests with `UNAUTHORIZED_CLIENT`.
 
-- Store bridge secret in local secure config (not in repo).
-- Do not hardcode tokens in extension/app bundles.
-- Rotate shared client secret if compromised.
+3. **Replay protection**
+   - Requires request `timestamp`.
+   - Rejects stale timestamps (`STALE_TIMESTAMP`).
 
-## Data safety
+4. **Strict action allowlist**
+   - `bookmark`, `summarize`, `explain`, `prompt`.
 
-- `BOOKMARKS.md` should contain only user-intended saved metadata.
-- Summarize/Explain payloads should not be stored unless explicitly needed.
-- Consider optional redaction/truncation for sensitive selections.
+5. **Payload validation and limits**
+   - Strict schema (`additionalProperties: false`).
+   - Selection length cap enforced.
 
-## Abuse prevention
+6. **Secret isolation**
+   - OpenClaw token remains in bridge `.env` only.
+   - Never exposed to extension code.
 
-- Add per-client rate limiting.
-- Add idempotency key support to avoid duplicate bookmark writes.
-- Reject unsupported actions with clear error messages.
+7. **Logging policy**
+   - Logs metadata (requestId/action/source/status/latency), not full selection text by default.
+
+8. **Bookmark dedupe safety**
+   - Retry dedupe via `idempotencyKey`.
+   - URL dedupe via canonical URL matching.
+
+## Operational hardening checklist
+
+- Use a strong random `OPENCLAW_CLIENT_KEY`.
+- Set restrictive file permissions:
+  - `chmod 600 bridge/.env`
+  - `chmod 600 ~/.openclaw/workspace/BOOKMARKS.md`
+- Configure explicit `OPENCLAW_CLI_PATH` in `.env` when running under systemd.
+- Keep bridge behind tailnet or SSH tunnel; do not expose unauthenticated public endpoints.
+
+## Data handling notes
+
+- `BOOKMARKS.md` should contain only user-intended bookmark metadata.
+- Summarize/explain payload text is not persisted to bookmarks.
+- Consider adding optional local redaction for sensitive selected text in future clients.
+
+## Recommended next controls (future)
+
+- Per-client rate limiting.
+- Optional request signing (HMAC) in addition to shared key.
+- Optional audit stream for repeated failed auth attempts.
