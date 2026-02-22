@@ -27,7 +27,7 @@ with fast request acknowledgements and Telegram delivery through OpenClaw.
    - Validates request auth + payload + timestamp
    - Routes actions:
      - `bookmark` → writes to `BOOKMARKS.md`
-     - `summarize|explain|prompt` → forwards to OpenClaw `/v1/chat/completions`
+     - `summarize|explain|flashcards|prompt` → forwards to OpenClaw `/v1/chat/completions`
 
 3. **OpenClaw Gateway / Session**
    - Generates assistant output for non-bookmark actions
@@ -39,7 +39,7 @@ with fast request acknowledgements and Telegram delivery through OpenClaw.
 
 ## End-to-end flows
 
-### A) Summarize / Explain / Prompt
+### A) Summarize / Explain / Flashcards / Prompt
 
 1. User triggers action in client.
 2. Client sends payload to `POST /v1/action` with `X-OpenClaw-Client-Key`.

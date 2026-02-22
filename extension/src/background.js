@@ -7,6 +7,7 @@ import { createPendingPromptContext, purgeExpiredPromptContexts } from "./prompt
 const MENU_IDS = {
   summarize: "openclaw:summarize",
   explain: "openclaw:explain",
+  flashcards: "openclaw:flashcards",
   bookmark: "openclaw:bookmark",
   prompt: "openclaw:prompt"
 };
@@ -349,6 +350,11 @@ async function handleMenuClick(info, tab) {
     return;
   }
 
+  if (info.menuItemId === MENU_IDS.flashcards) {
+    await sendBridgeAction(ACTIONS.FLASHCARDS, context);
+    return;
+  }
+
   if (info.menuItemId === MENU_IDS.bookmark) {
     await sendBridgeAction(ACTIONS.BOOKMARK, context);
     return;
@@ -383,6 +389,12 @@ async function ensureContextMenus() {
   chrome.contextMenus.create({
     id: MENU_IDS.explain,
     title: "Explain with OpenClaw",
+    contexts: ["page", "selection", "link"]
+  });
+
+  chrome.contextMenus.create({
+    id: MENU_IDS.flashcards,
+    title: "Create Flashcards with OpenClaw",
     contexts: ["page", "selection", "link"]
   });
 

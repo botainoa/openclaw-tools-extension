@@ -13,6 +13,7 @@ Current implementation:
 From a web page, users can trigger actions such as:
 - **Summarize**
 - **Explain**
+- **Create Flashcards**
 - **Custom Prompt**
 - **Bookmark**
 
@@ -236,10 +237,11 @@ https://<node>.<tailnet>.ts.net:8443
 
 ## 8) End-to-end functional checks
 
-### Summarize / Explain / Prompt
+### Summarize / Explain / Flashcards / Prompt
 - Right click page/selection/link
 - Trigger action
 - Expect extension success + Telegram reply from OpenClaw
+- For **Flashcards**, expect a compact Q/A study set in Telegram
 
 ### Bookmark
 - Right click page/link → **Bookmark in OpenClaw**

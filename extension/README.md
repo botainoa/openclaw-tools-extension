@@ -1,12 +1,13 @@
 # RightClaw Chrome Extension (Private MVP)
 
-Manifest V3 extension that sends context-menu actions to the OpenClaw bridge.
+Manifest V3 extension that sends context-menu actions to the RightClaw bridge.
 
 ## Implemented
 
 - Context menu actions:
   - `Summarize with OpenClaw`
   - `Explain with OpenClaw`
+  - `Create Flashcards with OpenClaw`
   - `Bookmark in OpenClaw`
   - `Custom Prompt with OpenClaw`
 - Options page for:
@@ -45,7 +46,7 @@ Manifest V3 extension that sends context-menu actions to the OpenClaw bridge.
 4. On restricted pages (for example `chrome://` pages), a popup fallback is used.
 5. `Bookmark in OpenClaw` writes a Markdown entry to server-side `BOOKMARKS.md` (recommended server path: `~/.openclaw/workspace/BOOKMARKS.md`).
 6. If bridge relay target is configured, bookmark saves send a short Telegram confirmation (`Saved` or `Already bookmarked` for duplicates).
-7. Wait for Telegram response from OpenClaw for summarize/explain/prompt actions.
+7. Wait for Telegram response from OpenClaw for summarize/explain/flashcards/prompt actions.
 
 ## Notes
 

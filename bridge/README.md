@@ -153,7 +153,7 @@ https://<your-node>.<your-tailnet>.ts.net:8443/v1/action
 
 ## Upstream forwarding config
 
-Bridge forwards to OpenClaw using the OpenAI-compatible HTTP endpoint:
+Bridge forwards non-bookmark actions (`summarize`, `explain`, `flashcards`, `prompt`) to OpenClaw using the OpenAI-compatible HTTP endpoint:
 
 - `POST $OPENCLAW_BASE_URL/v1/chat/completions`
 - Header: `Authorization: Bearer $OPENCLAW_TOKEN`

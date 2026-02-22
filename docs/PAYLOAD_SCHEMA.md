@@ -7,7 +7,7 @@ Shared request contract for Chrome extension clients.
 ```json
 {
   "version": "1",
-  "action": "bookmark|summarize|explain|prompt",
+  "action": "bookmark|summarize|explain|flashcards|prompt",
   "source": "chrome",
   "url": "https://example.com",
   "title": "Page title",

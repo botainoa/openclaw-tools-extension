@@ -20,7 +20,7 @@
    - Rejects stale timestamps (`STALE_TIMESTAMP`).
 
 4. **Strict action allowlist**
-   - `bookmark`, `summarize`, `explain`, `prompt`.
+   - `bookmark`, `summarize`, `explain`, `flashcards`, `prompt`.
 
 5. **Payload validation and limits**
    - Strict schema (`additionalProperties: false`).
