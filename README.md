@@ -243,7 +243,7 @@ https://<node>.<tailnet>.ts.net:8443
 - Right click page/selection/link
 - Trigger action
 - Expect extension success + Telegram reply from OpenClaw
-- For **Flashcards**, expect a compact Q/A study set in Telegram
+- For **Flashcards**, expect a short Telegram acknowledgment (`saved` / `already saved`)
 
 ### Bookmark
 - Right click page/link → **Bookmark in OpenClaw**

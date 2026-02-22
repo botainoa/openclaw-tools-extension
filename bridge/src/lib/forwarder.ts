@@ -68,6 +68,18 @@ function buildBookmarkAckMessage(req: ActionRequest, result: BookmarkAppendResul
   return `${prefix}: ${title}`;
 }
 
+function buildFlashcardsAckMessage(req: ActionRequest, result: FlashcardsAppendResult): string {
+  const title = req.title?.trim() || "Untitled";
+  const url = req.url?.trim();
+  const prefix = result.deduped ? "🧠 Flashcards already saved" : "🧠 Flashcards saved";
+
+  if (url) {
+    return `${prefix}: ${title}\n${url}\nSay "quiz me on this" anytime.`;
+  }
+
+  return `${prefix}: ${title}\nSay "quiz me on this" anytime.`;
+}
+
 function extractCompletionText(payload: unknown): string | null {
   if (typeof payload !== "object" || payload === null) return null;
   if (!("choices" in payload)) return null;
@@ -190,14 +202,30 @@ async function forwardViaChatCompletionsOnce(
           return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
         }
 
+        let flashcardsResult: FlashcardsAppendResult;
         try {
-          await flashcardsAppendFn(req, requestId, completionText);
+          flashcardsResult = await flashcardsAppendFn(req, requestId, completionText);
         } catch (error) {
           debugForwarderLog("flashcards append failed", {
             message: error instanceof Error ? error.message : String(error)
           });
           return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
         }
+
+        if (config.telegramTarget) {
+          void telegramSendFn({
+            channel: config.telegramChannel,
+            target: config.telegramTarget,
+            message: buildFlashcardsAckMessage(req, flashcardsResult),
+            timeoutMs: config.telegramSendTimeoutMs
+          }).catch((error) => {
+            debugForwarderLog("flashcards telegram ack failed", {
+              message: error instanceof Error ? error.message : String(error)
+            });
+          });
+        }
+
+        return { status: "sent", requestId };
       }
 
       if (config.telegramTarget) {

@@ -171,7 +171,7 @@ Optional Telegram relay via CLI:
 - Set `OPENCLAW_TELEGRAM_TARGET` to enable CLI send step.
 - Bridge runs: `openclaw message send --channel <channel> --target <target> --message <text>`
 - If binary path is not on `PATH`, set `OPENCLAW_CLI_PATH`.
-- Bookmark actions also send a Telegram confirmation message by default when `OPENCLAW_TELEGRAM_TARGET` is set.
+- Bookmark and flashcards actions also send short Telegram confirmation messages by default when `OPENCLAW_TELEGRAM_TARGET` is set.
 
 `/v1/chat/completions` must be enabled in your OpenClaw Gateway config.
 
@@ -208,6 +208,9 @@ For `action="flashcards"`, the bridge writes generated cards to `FLASHCARDS.md`.
 - Optional override: `OPENCLAW_FLASHCARDS_PATH`
 - Stores: timestamp, title, source, url, idempotency key, request id, and generated Q/A content
 - Uses `idempotencyKey` to avoid duplicate writes on retries
+- Sends a short Telegram acknowledgment by default when `OPENCLAW_TELEGRAM_TARGET` is configured:
+  - `🧠 Flashcards saved: ...`
+  - `🧠 Flashcards already saved: ...` on idempotent retries
 
 Migration tip:
 
