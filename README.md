@@ -265,6 +265,7 @@ Bookmark behavior details:
 
 Flashcards behavior details:
 - appends generated cards with source/url/title metadata
+- title is generated from content when model returns structured flashcards output
 - retry dedupe via `idempotencyKey`
 
 ---

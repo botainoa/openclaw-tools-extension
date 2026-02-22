@@ -56,7 +56,7 @@ with fast request acknowledgements and Telegram delivery through OpenClaw.
 
 1. User triggers flashcards action.
 2. Bridge forwards to OpenClaw chat completions.
-3. Bridge stores generated cards into `FLASHCARDS.md`.
+3. Bridge stores generated cards into `FLASHCARDS.md` (including generated topic title when available).
 4. Bridge sends a short Telegram acknowledgement that cards were saved.
 
 ### C) Bookmark

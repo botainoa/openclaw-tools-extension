@@ -36,24 +36,40 @@ function debugForwarderLog(message: string, details?: Record<string, unknown>): 
   console.error(`[openclaw-forwarder] ${message}`);
 }
 
+function baseActionPayload(req: ActionRequest, requestId: string): Record<string, unknown> {
+  return {
+    requestId,
+    action: req.action,
+    source: req.source,
+    context: {
+      url: req.url,
+      title: req.title,
+      selection: req.selection,
+      userPrompt: req.userPrompt,
+      tags: req.tags ?? []
+    },
+    responseMode: req.responseMode ?? "telegram",
+    timestamp: req.timestamp
+  };
+}
+
 function buildActionMessage(req: ActionRequest, requestId: string): string {
-  return [
-    "RightClaw action request:",
-    JSON.stringify({
-      requestId,
-      action: req.action,
-      source: req.source,
-      context: {
-        url: req.url,
-        title: req.title,
-        selection: req.selection,
-        userPrompt: req.userPrompt,
-        tags: req.tags ?? []
-      },
-      responseMode: req.responseMode ?? "telegram",
-      timestamp: req.timestamp
-    })
-  ].join("\n");
+  if (req.action === "flashcards") {
+    return [
+      "RightClaw flashcards generation request.",
+      "Use the provided context (prefer selection when available) to create concise study flashcards.",
+      "Return ONLY valid JSON with this exact schema:",
+      '{"title":"short topic title","cards":[{"q":"question","a":"answer"}]}',
+      "Rules:",
+      "- title: 3-8 words, specific to the content.",
+      "- cards: 8-12 items when possible.",
+      "- keep each question/answer concise and factual.",
+      "Context:",
+      JSON.stringify(baseActionPayload(req, requestId))
+    ].join("\n");
+  }
+
+  return ["RightClaw action request:", JSON.stringify(baseActionPayload(req, requestId))].join("\n");
 }
 
 function buildBookmarkAckMessage(req: ActionRequest, result: BookmarkAppendResult): string {
@@ -78,6 +94,73 @@ function buildFlashcardsAckMessage(req: ActionRequest, result: FlashcardsAppendR
   }
 
   return `${prefix}: ${title}\nSay "quiz me on this" anytime.`;
+}
+
+type ParsedFlashcards = {
+  title: string;
+  cardsText: string;
+};
+
+function parseJsonObjectFromText(text: string): Record<string, unknown> | null {
+  const candidates = [text.trim()];
+
+  const fencedMatch = text.match(/```json\s*([\s\S]*?)```/i) ?? text.match(/```\s*([\s\S]*?)```/i);
+  if (fencedMatch?.[1]) {
+    candidates.push(fencedMatch[1].trim());
+  }
+
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    candidates.push(text.slice(firstBrace, lastBrace + 1).trim());
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      // try next candidate
+    }
+  }
+
+  return null;
+}
+
+function parseFlashcardsCompletionText(text: string): ParsedFlashcards | null {
+  const parsed = parseJsonObjectFromText(text);
+  if (!parsed) return null;
+
+  const rawTitle = parsed.title;
+  const rawCards = parsed.cards;
+
+  if (typeof rawTitle !== "string") return null;
+  if (!Array.isArray(rawCards) || rawCards.length === 0) return null;
+
+  const title = rawTitle.trim();
+  if (!title) return null;
+
+  const normalizedCards = rawCards
+    .map((card) => {
+      if (typeof card !== "object" || card === null) return null;
+      const q = (card as { q?: unknown }).q;
+      const a = (card as { a?: unknown }).a;
+      if (typeof q !== "string" || typeof a !== "string") return null;
+      const question = q.trim();
+      const answer = a.trim();
+      if (!question || !answer) return null;
+      return { question, answer };
+    })
+    .filter((card): card is { question: string; answer: string } => Boolean(card))
+    .slice(0, 20);
+
+  if (normalizedCards.length === 0) return null;
+
+  const cardsText = normalizedCards.map((card, idx) => `Q${idx + 1}: ${card.question}\nA${idx + 1}: ${card.answer}`).join("\n\n");
+
+  return { title, cardsText };
 }
 
 function extractCompletionText(payload: unknown): string | null {
@@ -202,9 +285,13 @@ async function forwardViaChatCompletionsOnce(
           return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
         }
 
+        const parsedFlashcards = parseFlashcardsCompletionText(completionText);
+        const flashcardsReq = parsedFlashcards?.title ? { ...req, title: parsedFlashcards.title } : req;
+        const cardsForStorage = parsedFlashcards?.cardsText ?? completionText;
+
         let flashcardsResult: FlashcardsAppendResult;
         try {
-          flashcardsResult = await flashcardsAppendFn(req, requestId, completionText);
+          flashcardsResult = await flashcardsAppendFn(flashcardsReq, requestId, cardsForStorage);
         } catch (error) {
           debugForwarderLog("flashcards append failed", {
             message: error instanceof Error ? error.message : String(error)
@@ -216,7 +303,7 @@ async function forwardViaChatCompletionsOnce(
           void telegramSendFn({
             channel: config.telegramChannel,
             target: config.telegramTarget,
-            message: buildFlashcardsAckMessage(req, flashcardsResult),
+            message: buildFlashcardsAckMessage(flashcardsReq, flashcardsResult),
             timeoutMs: config.telegramSendTimeoutMs
           }).catch((error) => {
             debugForwarderLog("flashcards telegram ack failed", {

@@ -207,6 +207,7 @@ For `action="flashcards"`, the bridge writes generated cards to `FLASHCARDS.md`.
 - Recommended in production: set `OPENCLAW_FLASHCARDS_PATH` to your OpenClaw workspace, e.g. `/home/<user>/.openclaw/workspace/FLASHCARDS.md`
 - Optional override: `OPENCLAW_FLASHCARDS_PATH`
 - Stores: timestamp, title, source, url, idempotency key, request id, and generated Q/A content
+- Uses model-generated topic title when structured flashcards output is returned (fallback: request title)
 - Uses `idempotencyKey` to avoid duplicate writes on retries
 - Sends a short Telegram acknowledgment by default when `OPENCLAW_TELEGRAM_TARGET` is configured:
   - `🧠 Flashcards saved: ...`
