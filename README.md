@@ -246,7 +246,7 @@ https://<node>.<tailnet>.ts.net:8443
 - For **Flashcards**, expect a short Telegram acknowledgment (`saved` / `already saved`)
 
 ### Bookmark
-- Right click page/link → **Bookmark in OpenClaw**
+- Right click page/link → **Bookmark**
 - Expect:
   - bookmark entry in `BOOKMARKS.md`
   - Telegram confirmation (`Saved` or `Already bookmarked`)
@@ -258,7 +258,7 @@ Bookmark behavior details:
 - URL dedupe via canonical URL matching (removes fragments + common tracking params like `utm_*`, `fbclid`, `gclid`)
 
 ### Flashcards
-- Right click page/selection/link → **Create Flashcards with OpenClaw**
+- Right click page/selection/link → **Create Flashcards**
 - Expect:
   - Telegram flashcards response
   - flashcards entry in `FLASHCARDS.md`
