@@ -4,7 +4,7 @@ export type ActionType = (typeof ALLOWED_ACTIONS)[number];
 export type ActionRequest = {
   version: string;
   action: string;
-  source: "chrome" | "macos";
+  source: "chrome";
   url?: string;
   title?: string;
   selection?: string;

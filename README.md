@@ -5,7 +5,6 @@ RightClaw lets users send browser context to OpenClaw with one right-click actio
 Current implementation:
 - ✅ **Chrome extension** (`extension/`)
 - ✅ **Bridge service** (`bridge/`) that validates and routes actions
-- 🚧 **Native macOS app** (planned)
 
 ---
 
@@ -100,7 +99,7 @@ Now edit `bridge/.env`.
 Minimum required values:
 
 ```bash
-# shared secret expected from clients (extension/app)
+# shared secret expected from clients (extension)
 OPENCLAW_CLIENT_KEY=<strong-random-secret>
 
 # OpenClaw Gateway (OpenAI-compatible endpoint host)
@@ -326,4 +325,3 @@ sudo systemctl restart openclaw-bridge   # or: systemctl --user restart openclaw
 
 - ✅ Bridge + extension MVP are live
 - ✅ Bookmark persistence + dedupe + Telegram acknowledgment implemented
-- 🚧 macOS native client pending

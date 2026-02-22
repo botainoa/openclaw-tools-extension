@@ -1,6 +1,6 @@
 # Payload Schema (v1)
 
-Shared request contract for Chrome and future macOS clients.
+Shared request contract for Chrome extension clients.
 
 ## Request body
 
@@ -8,7 +8,7 @@ Shared request contract for Chrome and future macOS clients.
 {
   "version": "1",
   "action": "bookmark|summarize|explain|prompt",
-  "source": "chrome|macos",
+  "source": "chrome",
   "url": "https://example.com",
   "title": "Page title",
   "selection": "optional selected text",
@@ -29,7 +29,7 @@ Shared request contract for Chrome and future macOS clients.
 
 - `version` (required): currently `"1"`.
 - `action` (required): requested operation.
-- `source` (required): origin surface (`chrome|macos`).
+- `source` (required): origin surface (`chrome`).
 - `url` (optional but recommended): page/document link.
 - `title` (optional): display title.
 - `selection` (optional): highlighted text.

@@ -6,7 +6,7 @@ Run the **bridge on the same host as OpenClaw**.
 
 - If OpenClaw runs on a VPS, run bridge on that VPS.
 - If OpenClaw runs locally, run bridge locally.
-- Clients (Chrome, future macOS app) can run elsewhere and call the bridge over SSH tunnel or Tailscale.
+- Clients (Chrome extension) can run elsewhere and call the bridge over SSH tunnel or Tailscale.
 
 This avoids profile/channel mismatches and keeps Telegram delivery reliable.
 
@@ -14,7 +14,6 @@ This avoids profile/channel mismatches and keeps Telegram delivery reliable.
 
 Provide one shared action pipeline for:
 - Chrome extension (implemented)
-- Native macOS app (planned)
 
 with fast request acknowledgements and Telegram delivery through OpenClaw.
 
@@ -22,7 +21,6 @@ with fast request acknowledgements and Telegram delivery through OpenClaw.
 
 1. **Client surfaces**
    - Chrome extension (`extension/`)
-   - macOS app (planned)
 
 2. **Bridge service** (`bridge/`)
    - Fastify API: `GET /health`, `POST /v1/action`
@@ -78,6 +76,5 @@ Bridge API returns:
 
 ## Current gaps / next architecture steps
 
-- Native macOS client implementation
 - Optional richer bookmark metadata (notes/tags from future clients)
 - Optional server-side rate limits for abusive clients

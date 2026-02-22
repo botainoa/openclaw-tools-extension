@@ -70,15 +70,11 @@ Bridge should run on the same host as OpenClaw (typically the VPS), and clients 
 
 ## 4) Mid-term roadmap
 
-1. **Native macOS app**
-   - implement same payload contract as extension
-   - include custom prompt + selected text actions
-
-2. **Contract test suite**
-   - shared fixtures for Chrome and macOS payloads
+1. **Contract test suite**
+   - shared fixtures for Chrome payloads
    - regression coverage for dedupe and validation edge cases
 
-3. **Optional provider abstraction**
+2. **Optional provider abstraction**
    - keep current OpenClaw-first path
    - evaluate pluggable relay adapters only if needed
 
@@ -92,7 +88,7 @@ Stable v1 is reached when:
 2. Bridge uptime is stable under systemd with restart-on-failure.
 3. Extension actions are predictable and understandable on failure.
 4. Bookmark duplicates are consistently prevented (retry + URL variants).
-5. macOS client reaches feature parity with Chrome actions.
+5. Bridge/extension behavior is stable across retries, dedupe, and validation edge cases.
 
 ---
 

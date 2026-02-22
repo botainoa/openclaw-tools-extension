@@ -57,7 +57,7 @@ export function validatePayload(body: Partial<ActionRequest>): ValidPayloadResul
     return { ok: false, reason: "unsupported_action" };
   }
 
-  if (source !== "chrome" && source !== "macos") {
+  if (source !== "chrome") {
     return { ok: false, reason: "invalid_source" };
   }
 
