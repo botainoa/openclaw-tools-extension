@@ -45,8 +45,9 @@ Manifest V3 extension that sends context-menu actions to the RightClaw bridge.
 3. For `Custom Prompt`, enter prompt text in the in-page modal and send.
 4. On restricted pages (for example `chrome://` pages), a popup fallback is used.
 5. `Bookmark in OpenClaw` writes a Markdown entry to server-side `BOOKMARKS.md` (recommended server path: `~/.openclaw/workspace/BOOKMARKS.md`).
-6. If bridge relay target is configured, bookmark saves send a short Telegram confirmation (`Saved` or `Already bookmarked` for duplicates).
-7. Wait for Telegram response from OpenClaw for summarize/explain/flashcards/prompt actions.
+6. `Create Flashcards with OpenClaw` sends study cards to Telegram and stores them in server-side `FLASHCARDS.md` (recommended path: `~/.openclaw/workspace/FLASHCARDS.md`).
+7. If bridge relay target is configured, bookmark saves send a short Telegram confirmation (`Saved` or `Already bookmarked` for duplicates).
+8. Wait for Telegram response from OpenClaw for summarize/explain/flashcards/prompt actions.
 
 ## Notes
 

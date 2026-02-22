@@ -76,6 +76,11 @@ OPENCLAW_FORWARD_DEBUG=1
 # Recommended on OpenClaw VPS: /home/<user>/.openclaw/workspace/BOOKMARKS.md
 # OPENCLAW_BOOKMARKS_PATH=/absolute/path/to/BOOKMARKS.md
 
+# Optional flashcards store path.
+# Default if unset: ../FLASHCARDS.md (repo root)
+# Recommended on OpenClaw VPS: /home/<user>/.openclaw/workspace/FLASHCARDS.md
+# OPENCLAW_FLASHCARDS_PATH=/absolute/path/to/FLASHCARDS.md
+
 BRIDGE_PORT=8787
 ```
 
@@ -192,6 +197,23 @@ Migration tip:
 ```bash
 # Move existing repo-local file to OpenClaw workspace path (example)
 mv ../BOOKMARKS.md /home/<user>/.openclaw/workspace/BOOKMARKS.md
+```
+
+## Flashcards action storage
+
+For `action="flashcards"`, the bridge writes generated cards to `FLASHCARDS.md`.
+
+- Default path: `../FLASHCARDS.md` (repo root relative to `bridge/`)
+- Recommended in production: set `OPENCLAW_FLASHCARDS_PATH` to your OpenClaw workspace, e.g. `/home/<user>/.openclaw/workspace/FLASHCARDS.md`
+- Optional override: `OPENCLAW_FLASHCARDS_PATH`
+- Stores: timestamp, title, source, url, idempotency key, request id, and generated Q/A content
+- Uses `idempotencyKey` to avoid duplicate writes on retries
+
+Migration tip:
+
+```bash
+# Move existing repo-local file to OpenClaw workspace path (example)
+mv ../FLASHCARDS.md /home/<user>/.openclaw/workspace/FLASHCARDS.md
 ```
 
 ## Behavior

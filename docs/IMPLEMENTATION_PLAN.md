@@ -18,7 +18,8 @@ Generated: 2026-02-21
   - structured responses (`sent|queued|failed`)
 - Action handling:
   - `bookmark`: direct Markdown storage (`BOOKMARKS.md`)
-  - `summarize|explain|flashcards|prompt`: OpenClaw chat-completions forwarding
+  - `flashcards`: OpenClaw chat-completions forwarding + Markdown storage (`FLASHCARDS.md`)
+  - `summarize|explain|prompt`: OpenClaw chat-completions forwarding
 - Bookmark behavior:
   - append structured entries
   - idempotency dedupe

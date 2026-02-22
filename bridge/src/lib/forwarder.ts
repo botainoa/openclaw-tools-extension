@@ -2,6 +2,7 @@ import type { ActionRequest, BridgeResponse } from "../types/action.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { appendBookmark, type BookmarkAppendResult } from "./bookmarks.js";
+import { appendFlashcards, type FlashcardsAppendResult } from "./flashcards.js";
 
 const DEFAULT_TIMEOUT_MS = 6000;
 const DEFAULT_MAX_RETRIES = 1;
@@ -14,6 +15,7 @@ const DEFAULT_TELEGRAM_SEND_TIMEOUT_MS = 8000;
 type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 type TelegramSendFn = (params: { channel: string; target: string; message: string; timeoutMs: number }) => Promise<void>;
 type BookmarkAppendFn = (req: ActionRequest, requestId: string) => Promise<BookmarkAppendResult>;
+type FlashcardsAppendFn = (req: ActionRequest, requestId: string, cardsText: string) => Promise<FlashcardsAppendResult>;
 
 const execFileAsync = promisify(execFile);
 
@@ -128,10 +130,11 @@ async function forwardViaChatCompletionsOnce(
     telegramChannel: string;
     telegramSendTimeoutMs: number;
   },
-  deps: { fetchFn?: FetchLike; telegramSendFn?: TelegramSendFn } = {}
+  deps: { fetchFn?: FetchLike; telegramSendFn?: TelegramSendFn; flashcardsAppendFn?: FlashcardsAppendFn } = {}
 ): Promise<BridgeResponse> {
   const fetchFn = deps.fetchFn ?? fetch;
   const telegramSendFn = deps.telegramSendFn ?? sendTelegramViaCli;
+  const flashcardsAppendFn = deps.flashcardsAppendFn ?? appendFlashcards;
   const upstreamUrl = `${normalizeBaseUrl(config.baseUrl)}/v1/chat/completions`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
@@ -165,7 +168,10 @@ async function forwardViaChatCompletionsOnce(
     });
 
     if (response.ok) {
-      if (config.telegramTarget) {
+      const needsCompletionText = Boolean(config.telegramTarget) || req.action === "flashcards";
+      let completionText: string | null = null;
+
+      if (needsCompletionText) {
         let payload: unknown;
         try {
           payload = await response.json();
@@ -173,7 +179,28 @@ async function forwardViaChatCompletionsOnce(
           return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
         }
 
-        const completionText = extractCompletionText(payload);
+        completionText = extractCompletionText(payload);
+        if (!completionText) {
+          return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
+        }
+      }
+
+      if (req.action === "flashcards") {
+        if (!completionText) {
+          return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
+        }
+
+        try {
+          await flashcardsAppendFn(req, requestId, completionText);
+        } catch (error) {
+          debugForwarderLog("flashcards append failed", {
+            message: error instanceof Error ? error.message : String(error)
+          });
+          return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
+        }
+      }
+
+      if (config.telegramTarget) {
         if (!completionText) {
           return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
         }
@@ -227,7 +254,12 @@ async function forwardViaChatCompletionsOnce(
 export async function forwardToOpenClaw(
   req: ActionRequest,
   requestId: string,
-  deps: { fetchFn?: FetchLike; telegramSendFn?: TelegramSendFn; bookmarkAppendFn?: BookmarkAppendFn } = {}
+  deps: {
+    fetchFn?: FetchLike;
+    telegramSendFn?: TelegramSendFn;
+    bookmarkAppendFn?: BookmarkAppendFn;
+    flashcardsAppendFn?: FlashcardsAppendFn;
+  } = {}
 ): Promise<BridgeResponse> {
   const telegramTarget = process.env.OPENCLAW_TELEGRAM_TARGET;
   const telegramChannel = process.env.OPENCLAW_TELEGRAM_CHANNEL ?? DEFAULT_TELEGRAM_CHANNEL;
@@ -290,7 +322,11 @@ export async function forwardToOpenClaw(
         telegramChannel,
         telegramSendTimeoutMs
       },
-      { fetchFn: deps.fetchFn, telegramSendFn: deps.telegramSendFn }
+      {
+        fetchFn: deps.fetchFn,
+        telegramSendFn: deps.telegramSendFn,
+        flashcardsAppendFn: deps.flashcardsAppendFn
+      }
     );
 
     if (response.status === "sent") {
