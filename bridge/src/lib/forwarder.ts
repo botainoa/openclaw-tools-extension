@@ -2,6 +2,7 @@ import type { ActionRequest, BridgeResponse } from "../types/action.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { appendBookmark, type BookmarkAppendResult } from "./bookmarks.js";
+import { appendFlashcards, type FlashcardsAppendResult } from "./flashcards.js";
 
 const DEFAULT_TIMEOUT_MS = 6000;
 const DEFAULT_MAX_RETRIES = 1;
@@ -14,6 +15,7 @@ const DEFAULT_TELEGRAM_SEND_TIMEOUT_MS = 8000;
 type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 type TelegramSendFn = (params: { channel: string; target: string; message: string; timeoutMs: number }) => Promise<void>;
 type BookmarkAppendFn = (req: ActionRequest, requestId: string) => Promise<BookmarkAppendResult>;
+type FlashcardsAppendFn = (req: ActionRequest, requestId: string, cardsText: string) => Promise<FlashcardsAppendResult>;
 
 const execFileAsync = promisify(execFile);
 
@@ -34,24 +36,40 @@ function debugForwarderLog(message: string, details?: Record<string, unknown>): 
   console.error(`[openclaw-forwarder] ${message}`);
 }
 
+function baseActionPayload(req: ActionRequest, requestId: string): Record<string, unknown> {
+  return {
+    requestId,
+    action: req.action,
+    source: req.source,
+    context: {
+      url: req.url,
+      title: req.title,
+      selection: req.selection,
+      userPrompt: req.userPrompt,
+      tags: req.tags ?? []
+    },
+    responseMode: req.responseMode ?? "telegram",
+    timestamp: req.timestamp
+  };
+}
+
 function buildActionMessage(req: ActionRequest, requestId: string): string {
-  return [
-    "RightClaw action request:",
-    JSON.stringify({
-      requestId,
-      action: req.action,
-      source: req.source,
-      context: {
-        url: req.url,
-        title: req.title,
-        selection: req.selection,
-        userPrompt: req.userPrompt,
-        tags: req.tags ?? []
-      },
-      responseMode: req.responseMode ?? "telegram",
-      timestamp: req.timestamp
-    })
-  ].join("\n");
+  if (req.action === "flashcards") {
+    return [
+      "RightClaw flashcards generation request.",
+      "Use the provided context (prefer selection when available) to create concise study flashcards.",
+      "Return ONLY valid JSON with this exact schema:",
+      '{"title":"short topic title","cards":[{"q":"question","a":"answer"}]}',
+      "Rules:",
+      "- title: 3-8 words, specific to the content.",
+      "- cards: 8-12 items when possible.",
+      "- keep each question/answer concise and factual.",
+      "Context:",
+      JSON.stringify(baseActionPayload(req, requestId))
+    ].join("\n");
+  }
+
+  return ["RightClaw action request:", JSON.stringify(baseActionPayload(req, requestId))].join("\n");
 }
 
 function buildBookmarkAckMessage(req: ActionRequest, result: BookmarkAppendResult): string {
@@ -64,6 +82,85 @@ function buildBookmarkAckMessage(req: ActionRequest, result: BookmarkAppendResul
   }
 
   return `${prefix}: ${title}`;
+}
+
+function buildFlashcardsAckMessage(req: ActionRequest, result: FlashcardsAppendResult): string {
+  const title = req.title?.trim() || "Untitled";
+  const url = req.url?.trim();
+  const prefix = result.deduped ? "🧠 Flashcards already saved" : "🧠 Flashcards saved";
+
+  if (url) {
+    return `${prefix}: ${title}\n${url}\nSay "quiz me on this" anytime.`;
+  }
+
+  return `${prefix}: ${title}\nSay "quiz me on this" anytime.`;
+}
+
+type ParsedFlashcards = {
+  title: string;
+  cardsText: string;
+};
+
+function parseJsonObjectFromText(text: string): Record<string, unknown> | null {
+  const candidates = [text.trim()];
+
+  const fencedMatch = text.match(/```json\s*([\s\S]*?)```/i) ?? text.match(/```\s*([\s\S]*?)```/i);
+  if (fencedMatch?.[1]) {
+    candidates.push(fencedMatch[1].trim());
+  }
+
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    candidates.push(text.slice(firstBrace, lastBrace + 1).trim());
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      // try next candidate
+    }
+  }
+
+  return null;
+}
+
+function parseFlashcardsCompletionText(text: string): ParsedFlashcards | null {
+  const parsed = parseJsonObjectFromText(text);
+  if (!parsed) return null;
+
+  const rawTitle = parsed.title;
+  const rawCards = parsed.cards;
+
+  if (typeof rawTitle !== "string") return null;
+  if (!Array.isArray(rawCards) || rawCards.length === 0) return null;
+
+  const title = rawTitle.trim();
+  if (!title) return null;
+
+  const normalizedCards = rawCards
+    .map((card) => {
+      if (typeof card !== "object" || card === null) return null;
+      const q = (card as { q?: unknown }).q;
+      const a = (card as { a?: unknown }).a;
+      if (typeof q !== "string" || typeof a !== "string") return null;
+      const question = q.trim();
+      const answer = a.trim();
+      if (!question || !answer) return null;
+      return { question, answer };
+    })
+    .filter((card): card is { question: string; answer: string } => Boolean(card))
+    .slice(0, 20);
+
+  if (normalizedCards.length === 0) return null;
+
+  const cardsText = normalizedCards.map((card, idx) => `Q${idx + 1}: ${card.question}\nA${idx + 1}: ${card.answer}`).join("\n\n");
+
+  return { title, cardsText };
 }
 
 function extractCompletionText(payload: unknown): string | null {
@@ -128,10 +225,11 @@ async function forwardViaChatCompletionsOnce(
     telegramChannel: string;
     telegramSendTimeoutMs: number;
   },
-  deps: { fetchFn?: FetchLike; telegramSendFn?: TelegramSendFn } = {}
+  deps: { fetchFn?: FetchLike; telegramSendFn?: TelegramSendFn; flashcardsAppendFn?: FlashcardsAppendFn } = {}
 ): Promise<BridgeResponse> {
   const fetchFn = deps.fetchFn ?? fetch;
   const telegramSendFn = deps.telegramSendFn ?? sendTelegramViaCli;
+  const flashcardsAppendFn = deps.flashcardsAppendFn ?? appendFlashcards;
   const upstreamUrl = `${normalizeBaseUrl(config.baseUrl)}/v1/chat/completions`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
@@ -165,7 +263,10 @@ async function forwardViaChatCompletionsOnce(
     });
 
     if (response.ok) {
-      if (config.telegramTarget) {
+      const needsCompletionText = Boolean(config.telegramTarget) || req.action === "flashcards";
+      let completionText: string | null = null;
+
+      if (needsCompletionText) {
         let payload: unknown;
         try {
           payload = await response.json();
@@ -173,7 +274,48 @@ async function forwardViaChatCompletionsOnce(
           return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
         }
 
-        const completionText = extractCompletionText(payload);
+        completionText = extractCompletionText(payload);
+        if (!completionText) {
+          return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
+        }
+      }
+
+      if (req.action === "flashcards") {
+        if (!completionText) {
+          return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
+        }
+
+        const parsedFlashcards = parseFlashcardsCompletionText(completionText);
+        const flashcardsReq = parsedFlashcards?.title ? { ...req, title: parsedFlashcards.title } : req;
+        const cardsForStorage = parsedFlashcards?.cardsText ?? completionText;
+
+        let flashcardsResult: FlashcardsAppendResult;
+        try {
+          flashcardsResult = await flashcardsAppendFn(flashcardsReq, requestId, cardsForStorage);
+        } catch (error) {
+          debugForwarderLog("flashcards append failed", {
+            message: error instanceof Error ? error.message : String(error)
+          });
+          return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
+        }
+
+        if (config.telegramTarget) {
+          void telegramSendFn({
+            channel: config.telegramChannel,
+            target: config.telegramTarget,
+            message: buildFlashcardsAckMessage(flashcardsReq, flashcardsResult),
+            timeoutMs: config.telegramSendTimeoutMs
+          }).catch((error) => {
+            debugForwarderLog("flashcards telegram ack failed", {
+              message: error instanceof Error ? error.message : String(error)
+            });
+          });
+        }
+
+        return { status: "sent", requestId };
+      }
+
+      if (config.telegramTarget) {
         if (!completionText) {
           return { status: "failed", requestId, errorCode: "INTERNAL_ERROR" };
         }
@@ -227,7 +369,12 @@ async function forwardViaChatCompletionsOnce(
 export async function forwardToOpenClaw(
   req: ActionRequest,
   requestId: string,
-  deps: { fetchFn?: FetchLike; telegramSendFn?: TelegramSendFn; bookmarkAppendFn?: BookmarkAppendFn } = {}
+  deps: {
+    fetchFn?: FetchLike;
+    telegramSendFn?: TelegramSendFn;
+    bookmarkAppendFn?: BookmarkAppendFn;
+    flashcardsAppendFn?: FlashcardsAppendFn;
+  } = {}
 ): Promise<BridgeResponse> {
   const telegramTarget = process.env.OPENCLAW_TELEGRAM_TARGET;
   const telegramChannel = process.env.OPENCLAW_TELEGRAM_CHANNEL ?? DEFAULT_TELEGRAM_CHANNEL;
@@ -290,7 +437,11 @@ export async function forwardToOpenClaw(
         telegramChannel,
         telegramSendTimeoutMs
       },
-      { fetchFn: deps.fetchFn, telegramSendFn: deps.telegramSendFn }
+      {
+        fetchFn: deps.fetchFn,
+        telegramSendFn: deps.telegramSendFn,
+        flashcardsAppendFn: deps.flashcardsAppendFn
+      }
     );
 
     if (response.status === "sent") {

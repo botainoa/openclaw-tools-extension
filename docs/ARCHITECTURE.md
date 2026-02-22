@@ -27,6 +27,7 @@ with fast request acknowledgements and Telegram delivery through OpenClaw.
    - Validates request auth + payload + timestamp
    - Routes actions:
      - `bookmark` → writes to `BOOKMARKS.md`
+     - `flashcards` → forwards to OpenClaw `/v1/chat/completions` and writes generated cards to `FLASHCARDS.md`
      - `summarize|explain|prompt` → forwards to OpenClaw `/v1/chat/completions`
 
 3. **OpenClaw Gateway / Session**
@@ -36,6 +37,10 @@ with fast request acknowledgements and Telegram delivery through OpenClaw.
 4. **Bookmark store**
    - Markdown file (`BOOKMARKS.md`)
    - Recommended location: `~/.openclaw/workspace/BOOKMARKS.md`
+
+5. **Flashcards store**
+   - Markdown file (`FLASHCARDS.md`)
+   - Recommended location: `~/.openclaw/workspace/FLASHCARDS.md`
 
 ## End-to-end flows
 
@@ -47,7 +52,14 @@ with fast request acknowledgements and Telegram delivery through OpenClaw.
 4. Bridge maps upstream result to `sent|queued|failed`.
 5. OpenClaw response is relayed to Telegram.
 
-### B) Bookmark
+### B) Flashcards
+
+1. User triggers flashcards action.
+2. Bridge forwards to OpenClaw chat completions.
+3. Bridge stores generated cards into `FLASHCARDS.md` (including generated topic title when available).
+4. Bridge sends a short Telegram acknowledgement that cards were saved.
+
+### C) Bookmark
 
 1. User triggers bookmark action.
 2. Bridge validates request.

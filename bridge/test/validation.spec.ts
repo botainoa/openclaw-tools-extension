@@ -16,6 +16,14 @@ describe("validatePayload", () => {
     expect(validatePayload(basePayload()).ok).toBe(true);
   });
 
+  it("accepts flashcards action", () => {
+    const result = validatePayload({ ...basePayload(), action: "flashcards" });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.payload.action).toBe("flashcards");
+    }
+  });
+
   it("rejects unsupported action", () => {
     const result = validatePayload({ ...basePayload(), action: "nope" });
     expect(result.ok).toBe(false);

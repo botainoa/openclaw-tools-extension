@@ -20,7 +20,7 @@
    - Rejects stale timestamps (`STALE_TIMESTAMP`).
 
 4. **Strict action allowlist**
-   - `bookmark`, `summarize`, `explain`, `prompt`.
+   - `bookmark`, `summarize`, `explain`, `flashcards`, `prompt`.
 
 5. **Payload validation and limits**
    - Strict schema (`additionalProperties: false`).
@@ -43,12 +43,14 @@
 - Set restrictive file permissions:
   - `chmod 600 bridge/.env`
   - `chmod 600 ~/.openclaw/workspace/BOOKMARKS.md`
+  - `chmod 600 ~/.openclaw/workspace/FLASHCARDS.md`
 - Configure explicit `OPENCLAW_CLI_PATH` in `.env` when running under systemd.
 - Keep bridge behind tailnet or SSH tunnel; do not expose unauthenticated public endpoints.
 
 ## Data handling notes
 
 - `BOOKMARKS.md` should contain only user-intended bookmark metadata.
+- `FLASHCARDS.md` stores generated study content; treat it as user data and secure accordingly.
 - Summarize/explain payload text is not persisted to bookmarks.
 - Consider adding optional local redaction for sensitive selected text in future clients.
 

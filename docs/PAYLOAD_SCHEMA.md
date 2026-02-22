@@ -7,7 +7,7 @@ Shared request contract for Chrome extension clients.
 ```json
 {
   "version": "1",
-  "action": "bookmark|summarize|explain|prompt",
+  "action": "bookmark|summarize|explain|flashcards|prompt",
   "source": "chrome",
   "url": "https://example.com",
   "title": "Page title",
@@ -68,4 +68,5 @@ Shared request contract for Chrome extension clients.
 ## Known behavior notes
 
 - `bookmark` is handled directly by bridge storage path (`BOOKMARKS.md`) and does not require OpenClaw chat completion.
-- URL duplicates are deduped using canonical URL matching.
+- `flashcards` is forwarded to OpenClaw and persisted to bridge storage path (`FLASHCARDS.md`).
+- URL duplicates for bookmarks are deduped using canonical URL matching.

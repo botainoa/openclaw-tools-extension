@@ -1,4 +1,4 @@
-export const ALLOWED_ACTIONS = ["summarize", "explain", "bookmark", "prompt"] as const;
+export const ALLOWED_ACTIONS = ["summarize", "explain", "flashcards", "bookmark", "prompt"] as const;
 export type ActionType = (typeof ALLOWED_ACTIONS)[number];
 
 export type ActionRequest = {

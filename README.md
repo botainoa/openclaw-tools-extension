@@ -13,12 +13,14 @@ Current implementation:
 From a web page, users can trigger actions such as:
 - **Summarize**
 - **Explain**
+- **Create Flashcards**
 - **Custom Prompt**
 - **Bookmark**
 
 The extension sends a request to the bridge (`/v1/action`), and the bridge:
-- forwards AI actions to OpenClaw (`/v1/chat/completions`), and
-- writes bookmarks directly to Markdown (`BOOKMARKS.md`).
+- forwards AI actions to OpenClaw (`/v1/chat/completions`),
+- writes bookmarks directly to Markdown (`BOOKMARKS.md`), and
+- writes generated flashcards to Markdown (`FLASHCARDS.md`).
 
 ---
 
@@ -123,10 +125,11 @@ OPENCLAW_CLI_PATH=/absolute/path/to/openclaw
 OPENCLAW_TELEGRAM_SEND_TIMEOUT_MS=8000
 ```
 
-Recommended bookmark file location:
+Recommended bookmark + flashcards file locations:
 
 ```bash
 OPENCLAW_BOOKMARKS_PATH=/home/<user>/.openclaw/workspace/BOOKMARKS.md
+OPENCLAW_FLASHCARDS_PATH=/home/<user>/.openclaw/workspace/FLASHCARDS.md
 ```
 
 Forwarding/retry tuning (optional):
@@ -171,7 +174,7 @@ Verify CLI send works:
 openclaw message send --channel telegram --target <chat_id_or_username> --message "bridge cli test"
 ```
 
-If this fails, bridge can still save bookmarks but Telegram acks/replies will fail.
+If this fails, bridge can still save bookmarks/flashcards to Markdown, but Telegram acks/replies will fail.
 
 ---
 
@@ -236,10 +239,11 @@ https://<node>.<tailnet>.ts.net:8443
 
 ## 8) End-to-end functional checks
 
-### Summarize / Explain / Prompt
+### Summarize / Explain / Flashcards / Prompt
 - Right click page/selection/link
 - Trigger action
 - Expect extension success + Telegram reply from OpenClaw
+- For **Flashcards**, expect a short Telegram acknowledgment (`saved` / `already saved`)
 
 ### Bookmark
 - Right click page/link → **Bookmark in OpenClaw**
@@ -252,6 +256,17 @@ Bookmark behavior details:
 - optional tags + note snippet
 - retry dedupe via `idempotencyKey`
 - URL dedupe via canonical URL matching (removes fragments + common tracking params like `utm_*`, `fbclid`, `gclid`)
+
+### Flashcards
+- Right click page/selection/link → **Create Flashcards with OpenClaw**
+- Expect:
+  - Telegram flashcards response
+  - flashcards entry in `FLASHCARDS.md`
+
+Flashcards behavior details:
+- appends generated cards with source/url/title metadata
+- title is generated from content when model returns structured flashcards output
+- retry dedupe via `idempotencyKey`
 
 ---
 
@@ -303,6 +318,11 @@ sudo systemctl restart openclaw-bridge   # or: systemctl --user restart openclaw
 - Check URL canonicalization edge cases (custom tracking params)
 - Confirm client sends stable URL (not changing path/query unexpectedly)
 
+### Flashcards are sent to Telegram but not written to file
+- Verify `OPENCLAW_FLASHCARDS_PATH` is set correctly
+- Ensure bridge process has write access to that path
+- Check bridge logs for `flashcards append failed`
+
 ### `UNAUTHORIZED_CLIENT`
 - Extension client key does not match `OPENCLAW_CLIENT_KEY`
 
@@ -317,7 +337,7 @@ sudo systemctl restart openclaw-bridge   # or: systemctl --user restart openclaw
 - Expose externally only through SSH tunnel or tailnet
 - Use strong random `OPENCLAW_CLIENT_KEY`
 - Keep `bridge/.env` protected (`chmod 600 bridge/.env`)
-- Keep bookmarks outside git-tracked paths in production (`~/.openclaw/workspace/BOOKMARKS.md`)
+- Keep bookmarks and flashcards outside git-tracked paths in production (`~/.openclaw/workspace/BOOKMARKS.md`, `~/.openclaw/workspace/FLASHCARDS.md`)
 
 ---
 
@@ -325,3 +345,4 @@ sudo systemctl restart openclaw-bridge   # or: systemctl --user restart openclaw
 
 - ✅ Bridge + extension MVP are live
 - ✅ Bookmark persistence + dedupe + Telegram acknowledgment implemented
+- ✅ Flashcards action + Markdown persistence implemented

@@ -76,6 +76,11 @@ OPENCLAW_FORWARD_DEBUG=1
 # Recommended on OpenClaw VPS: /home/<user>/.openclaw/workspace/BOOKMARKS.md
 # OPENCLAW_BOOKMARKS_PATH=/absolute/path/to/BOOKMARKS.md
 
+# Optional flashcards store path.
+# Default if unset: ../FLASHCARDS.md (repo root)
+# Recommended on OpenClaw VPS: /home/<user>/.openclaw/workspace/FLASHCARDS.md
+# OPENCLAW_FLASHCARDS_PATH=/absolute/path/to/FLASHCARDS.md
+
 BRIDGE_PORT=8787
 ```
 
@@ -153,7 +158,7 @@ https://<your-node>.<your-tailnet>.ts.net:8443/v1/action
 
 ## Upstream forwarding config
 
-Bridge forwards to OpenClaw using the OpenAI-compatible HTTP endpoint:
+Bridge forwards non-bookmark actions (`summarize`, `explain`, `flashcards`, `prompt`) to OpenClaw using the OpenAI-compatible HTTP endpoint:
 
 - `POST $OPENCLAW_BASE_URL/v1/chat/completions`
 - Header: `Authorization: Bearer $OPENCLAW_TOKEN`
@@ -166,7 +171,7 @@ Optional Telegram relay via CLI:
 - Set `OPENCLAW_TELEGRAM_TARGET` to enable CLI send step.
 - Bridge runs: `openclaw message send --channel <channel> --target <target> --message <text>`
 - If binary path is not on `PATH`, set `OPENCLAW_CLI_PATH`.
-- Bookmark actions also send a Telegram confirmation message by default when `OPENCLAW_TELEGRAM_TARGET` is set.
+- Bookmark and flashcards actions also send short Telegram confirmation messages by default when `OPENCLAW_TELEGRAM_TARGET` is set.
 
 `/v1/chat/completions` must be enabled in your OpenClaw Gateway config.
 
@@ -192,6 +197,27 @@ Migration tip:
 ```bash
 # Move existing repo-local file to OpenClaw workspace path (example)
 mv ../BOOKMARKS.md /home/<user>/.openclaw/workspace/BOOKMARKS.md
+```
+
+## Flashcards action storage
+
+For `action="flashcards"`, the bridge writes generated cards to `FLASHCARDS.md`.
+
+- Default path: `../FLASHCARDS.md` (repo root relative to `bridge/`)
+- Recommended in production: set `OPENCLAW_FLASHCARDS_PATH` to your OpenClaw workspace, e.g. `/home/<user>/.openclaw/workspace/FLASHCARDS.md`
+- Optional override: `OPENCLAW_FLASHCARDS_PATH`
+- Stores: timestamp, title, source, url, idempotency key, request id, and generated Q/A content
+- Uses model-generated topic title when structured flashcards output is returned (fallback: request title)
+- Uses `idempotencyKey` to avoid duplicate writes on retries
+- Sends a short Telegram acknowledgment by default when `OPENCLAW_TELEGRAM_TARGET` is configured:
+  - `🧠 Flashcards saved: ...`
+  - `🧠 Flashcards already saved: ...` on idempotent retries
+
+Migration tip:
+
+```bash
+# Move existing repo-local file to OpenClaw workspace path (example)
+mv ../FLASHCARDS.md /home/<user>/.openclaw/workspace/FLASHCARDS.md
 ```
 
 ## Behavior

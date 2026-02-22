@@ -30,6 +30,7 @@ describe("forwardToOpenClaw", () => {
     delete process.env.OPENCLAW_TELEGRAM_SEND_TIMEOUT_MS;
     delete process.env.OPENCLAW_CLI_PATH;
     delete process.env.OPENCLAW_BOOKMARKS_PATH;
+    delete process.env.OPENCLAW_FLASHCARDS_PATH;
   });
 
   it("stores bookmark actions in BOOKMARKS.md and sends Telegram ack by default", async () => {
@@ -193,6 +194,209 @@ describe("forwardToOpenClaw", () => {
 
     const content = await readFile(bookmarksPath, "utf8");
     expect(content).toContain("idempotencyKey: bookmark-ack-fail");
+  });
+
+  it("stores flashcards output in FLASHCARDS.md and sends Telegram ack", async () => {
+    process.env.OPENCLAW_BASE_URL = "https://openclaw.example.com";
+    process.env.OPENCLAW_TOKEN = "token";
+    process.env.OPENCLAW_TELEGRAM_TARGET = "telegram-target";
+
+    const tempDir = await mkdtemp(path.join(tmpdir(), "rightclaw-flashcards-"));
+    const flashcardsPath = path.join(tempDir, "FLASHCARDS.md");
+    process.env.OPENCLAW_FLASHCARDS_PATH = flashcardsPath;
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { role: "assistant", content: "Q1: A?\nA1: B." } }]
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+
+    const telegramSendFn = vi.fn().mockResolvedValue(undefined);
+
+    const res = await forwardToOpenClaw(
+      {
+        ...makeRequest(),
+        action: "flashcards",
+        title: "Flashcards topic",
+        idempotencyKey: "flashcards-1"
+      },
+      "r-flashcards-1",
+      { fetchFn: fetchMock, telegramSendFn }
+    );
+
+    expect(res).toEqual({ status: "sent", requestId: "r-flashcards-1" });
+    expect(telegramSendFn).toHaveBeenCalledTimes(1);
+    expect(telegramSendFn.mock.calls[0]?.[0]?.message).toBe(
+      '🧠 Flashcards saved: Flashcards topic\nhttps://example.com\nSay "quiz me on this" anytime.'
+    );
+
+    const content = await readFile(flashcardsPath, "utf8");
+    expect(content).toContain("# FLASHCARDS");
+    expect(content).toContain("Flashcards topic");
+    expect(content).toContain("idempotencyKey: flashcards-1");
+    expect(content).toContain("> Q1: A?");
+  });
+
+  it("uses model-generated flashcards title when structured output is returned", async () => {
+    process.env.OPENCLAW_BASE_URL = "https://openclaw.example.com";
+    process.env.OPENCLAW_TOKEN = "token";
+    process.env.OPENCLAW_TELEGRAM_TARGET = "telegram-target";
+
+    const tempDir = await mkdtemp(path.join(tmpdir(), "rightclaw-flashcards-"));
+    const flashcardsPath = path.join(tempDir, "FLASHCARDS.md");
+    process.env.OPENCLAW_FLASHCARDS_PATH = flashcardsPath;
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                role: "assistant",
+                content: JSON.stringify({
+                  title: "TCP Three-Way Handshake",
+                  cards: [
+                    { q: "What is SYN used for?", a: "It initiates the connection." },
+                    { q: "What follows SYN?", a: "SYN-ACK." }
+                  ]
+                })
+              }
+            }
+          ]
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+
+    const telegramSendFn = vi.fn().mockResolvedValue(undefined);
+
+    const res = await forwardToOpenClaw(
+      {
+        ...makeRequest(),
+        action: "flashcards",
+        title: "Original page title",
+        idempotencyKey: "flashcards-generated-title"
+      },
+      "r-flashcards-generated-title",
+      { fetchFn: fetchMock, telegramSendFn }
+    );
+
+    expect(res).toEqual({ status: "sent", requestId: "r-flashcards-generated-title" });
+    expect(telegramSendFn).toHaveBeenCalledTimes(1);
+    expect(telegramSendFn.mock.calls[0]?.[0]?.message).toContain("🧠 Flashcards saved: TCP Three-Way Handshake");
+
+    const content = await readFile(flashcardsPath, "utf8");
+    expect(content).toContain("TCP Three-Way Handshake");
+    expect(content).toContain("> Q1: What is SYN used for?");
+    expect(content).toContain("> A1: It initiates the connection.");
+  });
+
+  it("returns quickly for flashcards even when Telegram ack is slow", async () => {
+    process.env.OPENCLAW_BASE_URL = "https://openclaw.example.com";
+    process.env.OPENCLAW_TOKEN = "token";
+    process.env.OPENCLAW_TELEGRAM_TARGET = "telegram-target";
+
+    const tempDir = await mkdtemp(path.join(tmpdir(), "rightclaw-flashcards-"));
+    const flashcardsPath = path.join(tempDir, "FLASHCARDS.md");
+    process.env.OPENCLAW_FLASHCARDS_PATH = flashcardsPath;
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { role: "assistant", content: "Q1: A?\nA1: B." } }]
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+
+    const telegramSendFn = vi.fn(
+      () =>
+        new Promise<void>(() => {
+          // Intentionally never resolves; flashcards save path must not block on this.
+        })
+    );
+
+    const startedAt = Date.now();
+    const res = await forwardToOpenClaw(
+      {
+        ...makeRequest(),
+        action: "flashcards",
+        title: "Flashcards slow ack",
+        idempotencyKey: "flashcards-slow-ack"
+      },
+      "r-flashcards-slow-ack",
+      { fetchFn: fetchMock, telegramSendFn }
+    );
+    const elapsedMs = Date.now() - startedAt;
+
+    expect(res).toEqual({ status: "sent", requestId: "r-flashcards-slow-ack" });
+    expect(telegramSendFn).toHaveBeenCalledTimes(1);
+    expect(elapsedMs).toBeLessThan(500);
+  });
+
+  it("sends already-saved ack when flashcards idempotency dedupe triggers", async () => {
+    process.env.OPENCLAW_BASE_URL = "https://openclaw.example.com";
+    process.env.OPENCLAW_TOKEN = "token";
+    process.env.OPENCLAW_TELEGRAM_TARGET = "telegram-target";
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { role: "assistant", content: "Q1: A?\nA1: B." } }]
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+
+    const flashcardsAppendFn = vi.fn().mockResolvedValue({ deduped: true, reason: "idempotency" });
+    const telegramSendFn = vi.fn().mockResolvedValue(undefined);
+
+    const res = await forwardToOpenClaw(
+      {
+        ...makeRequest(),
+        action: "flashcards",
+        title: "Flashcards topic",
+        idempotencyKey: "flashcards-dedupe"
+      },
+      "r-flashcards-dedupe",
+      { fetchFn: fetchMock, flashcardsAppendFn, telegramSendFn }
+    );
+
+    expect(res).toEqual({ status: "sent", requestId: "r-flashcards-dedupe" });
+    expect(telegramSendFn).toHaveBeenCalledTimes(1);
+    expect(telegramSendFn.mock.calls[0]?.[0]?.message).toContain("🧠 Flashcards already saved:");
+  });
+
+  it("fails if flashcards cannot be persisted", async () => {
+    process.env.OPENCLAW_BASE_URL = "https://openclaw.example.com";
+    process.env.OPENCLAW_TOKEN = "token";
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { role: "assistant", content: "Q1: A?\nA1: B." } }]
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      )
+    );
+
+    const flashcardsAppendFn = vi.fn().mockRejectedValue(new Error("disk full"));
+
+    const res = await forwardToOpenClaw(
+      {
+        ...makeRequest(),
+        action: "flashcards",
+        title: "Flashcards topic",
+        idempotencyKey: "flashcards-2"
+      },
+      "r-flashcards-2",
+      { fetchFn: fetchMock, flashcardsAppendFn }
+    );
+
+    expect(res).toEqual({ status: "failed", requestId: "r-flashcards-2", errorCode: "INTERNAL_ERROR" });
   });
 
   it("fails when required upstream env is missing", async () => {
