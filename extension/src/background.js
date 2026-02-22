@@ -382,31 +382,31 @@ async function ensureContextMenus() {
 
   chrome.contextMenus.create({
     id: MENU_IDS.summarize,
-    title: "Summarize with OpenClaw",
+    title: "Summarize",
     contexts: ["page", "selection", "link"]
   });
 
   chrome.contextMenus.create({
     id: MENU_IDS.explain,
-    title: "Explain with OpenClaw",
+    title: "Explain",
     contexts: ["page", "selection", "link"]
   });
 
   chrome.contextMenus.create({
     id: MENU_IDS.flashcards,
-    title: "Create Flashcards with OpenClaw",
+    title: "Create Flashcards",
     contexts: ["page", "selection", "link"]
   });
 
   chrome.contextMenus.create({
     id: MENU_IDS.bookmark,
-    title: "Bookmark in OpenClaw",
+    title: "Bookmark",
     contexts: ["page", "link"]
   });
 
   chrome.contextMenus.create({
     id: MENU_IDS.prompt,
-    title: "Custom Prompt with OpenClaw",
+    title: "Prompt",
     contexts: ["page", "selection", "link"]
   });
 }
